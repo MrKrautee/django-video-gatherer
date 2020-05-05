@@ -1,0 +1,2 @@
+Django
+video_finder @ git+git://github.com/MrKrautee/simple-youtube-video-finder.git
