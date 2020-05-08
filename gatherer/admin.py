@@ -56,7 +56,8 @@ class VideoAdmin(admin.ModelAdmin):
             message_bit = "1 video was"
         else:
             message_bit = "%s videos were" % rows_updated
-        self.message_user(request, "%s successfully marked as active." % message_bit)
+        self.message_user(request,
+                "%s successfully marked as active." % message_bit)
     activate.short_description = "Mark as active"
 
     def deactivate(self, request, queryset):
@@ -65,7 +66,8 @@ class VideoAdmin(admin.ModelAdmin):
             message_bit = "1 video was"
         else:
             message_bit = "%s videos were" % rows_updated
-        self.message_user(request, "%s successfully marked as not active." % message_bit)
+        self.message_user(request,
+                "%s successfully marked as not active." % message_bit)
     deactivate.short_description = "Mark as not active"
 
     def add_tags(self, request, queryset):
@@ -85,9 +87,9 @@ class VideoAdmin(admin.ModelAdmin):
             n = queryset.count()
             if n:
                 self.message_user(request,
-                        _("Successfully add tags (%(tags)s) to %(count)d %(items)s.") % {
-                        "count": n, "items": model_ngettext(self.opts, n),
-                        "tags": ','.join([str(t) for t in tags]) }, messages.SUCCESS)
+                    _("Successfully add tags (%(tags)s) to %(count)d %(items)s.") % {
+                    "count": n, "items": model_ngettext(self.opts, n),
+                    "tags": ','.join([str(t) for t in tags]) }, messages.SUCCESS)
             # Return None to display the change list page again.
             return None
         objects_name = model_ngettext(queryset)

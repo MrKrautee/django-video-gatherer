@@ -1,0 +1,46 @@
+<link rel="stylesheet"
+href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+crossorigin="anonymous">
+
+<h1> Online Yogastunden </h1>
+{% for tag in tags %}
+<a href="{% url "videos" %}{{tag.name}}">
+<span class="badge badge-primary">{{ tag.name }}</span>
+</a>
+{% endfor %}
+<br>
+{{ object_list|length }} found.
+<div class="container">
+{% for video in object_list %}
+        <div class="row" id="{{ video.video_id }}">
+            <div class="col-3">
+                <img class="img-fluid img-thumbnail" src="{{ video.image}}" >
+            </div>
+            <div class="col-9">
+                <div class="row">
+                    <div class="video_headline col-9">
+                        <h3><a href="{{ video.link}}" target="_blank">{{ video.title }}</a></h3>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="video_description col-9">
+                        {{ video.description|truncatewords:75 }}
+                        {{ video.published_at }}
+                        {{ video.live_broadcast }}
+                        <br />
+                        <br />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="video_meta col-9">
+			    <small class="mute">{{ video.published_at }}</small>
+                        {{ video.duration }}
+                        <br />
+                        <br />
+                    </div>
+                </div>
+            </div>
+        </div>
+{% endfor %}
+</div>
