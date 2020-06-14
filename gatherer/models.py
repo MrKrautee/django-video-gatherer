@@ -3,7 +3,7 @@ from django.utils import dateparse
 from django.db import transaction
 
 #from gatherer.lib.youtube import YoutubeVideoFinder
-from gatherer.tools import youtube_finder
+from gatherer.tools import youtube_finder, EventType, VideoDuration
 # Create your models here.
 
 class Tag(models.Model):
@@ -41,7 +41,7 @@ class Video(models.Model):
     #        on_delete=models.SET_NULL, blank=True, null=True)
 
     def __str__(self):
-        return "%s" % self.title
+        return f"{self.title}\n\t{self.published_at}"
 
 class YoutubeVideo(Video):
     EVENT_TYPE_CHOICES = [
@@ -96,25 +96,32 @@ class YtSearchPattern(models.Model):
     class Meta:
         unique_together = [['channel', 'search_query']]
 
-    def save_videos(self, update=None):
+    def save_videos(self):
         """ fetch videos and save to db. """
-        videos = youtube_finder.get_videos(channel_id=self.channel.channel_id,
-                search_query=self.search_query, duration=self.duration,
-                event_type=self.event_type,
-                published_before=self.published_before,
-                published_after=self.published_after)
+        search_params = dict(
+                channel_id=self.channel.channel_id,
+                search_query=self.search_query,
+                duration=VideoDuration(self.duration)
+        )
+        if self.event_type:
+            search_params['event_type'] = EventType(self.event_type)
+        # @TODO: current not use:
+        # published_before=self.published_before,
+        # published_after=self.published_after
+        videos = youtube_finder.search_videos(content_details=True,
+                **search_params)
         with transaction.atomic():
             video_models_status = [
                     YoutubeVideo.objects.update_or_create(video_id=v.video_id,
                         defaults = dict(title=v.title,
                         description=v.description,
                         image=v.image_url,
-                        link=YoutubeVideo.URL_BASE + v.video_id,
+                        link=v.url,
                         published_at=dateparse.parse_datetime(v.published_at),
                         duration=dateparse.parse_duration(v.duration),
                         video_id=v.video_id,
                         channel_id=v.channel_id,
-                        live_broadcast=v.live_broadcast,update=update))
+                        live_broadcast=v.live_broadcast))
                     for v in videos]
             if self.tags.all():
                 for obj, _ in video_models_status:
@@ -124,13 +131,21 @@ class YtSearchPattern(models.Model):
 class UpdateManager(models.Manager):
 
     def make_update(self):
+        # @TODO: - only create new update if really videos added.
+        #        - only link added videos to update 
         new_update = self.model()
         new_update.save()
+        update_status = []
         for SearchPattern in self.model.VIDEO_SEARCH_PATTERNS:
             sp_objects = SearchPattern.objects.all()
             videos = []
             for sp in sp_objects:
-                sp.save_videos(update=new_update)
+                status = sp.save_videos()
+                update_status.extend(status)
+        for video, status in update_status:
+            if status:
+                video.update = new_update
+                video.save()
         return new_update
 
 class Update(models.Model):
