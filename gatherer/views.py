@@ -8,17 +8,16 @@ from .models import Tag
 
 class VideoList(ListView):
     model = Video
-    filters = { 
+    order_options = {
             "-published_at": "Datum ab",
             "published_at": "Datum auf",
             "-duration": "Dauer ab",
             "duration": "Dauer auf",
     }
-                
-
+    order_by = '-published_at'
 
     def get_queryset(self):
-        order_by = 'published_at'
+        order_by = self.order_by
         if self.request.method == 'GET':
             order_by = self.request.GET.get('order_by', order_by)
         if 'tag' in self.kwargs.keys():
@@ -32,14 +31,14 @@ class VideoList(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         tags = Tag.objects.filter(video__isnull=False).distinct()
-        context['tags'] = tags
-        context['filters'] = self.filters
-        order_by = 'published_at'
-        if self.request.method == 'GET':
-            order_by = self.request.GET.get('order_by', order_by)
-        context['order_by'] = order_by
-        tag = ''
-        if 'tag' in self.kwargs.keys():
-            tag = self.kwargs['tag']
-        context['current_tag'] = tag
-        return context
+        order_by = self.request.GET.get('order_by', self.order_by) \
+                if self.request.method == 'GET' else self.order_by
+        tag = self.kwargs['tag'] if 'tag' in self.kwargs.keys() else ''
+        extra_context = {
+                **context,
+                'tags': tags,
+                'current_tag': tag,
+                'order_by': order_by,
+                'order_options': self.order_options,
+        }
+        return extra_context

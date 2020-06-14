@@ -18,7 +18,7 @@ from gatherer.models import Tag
 from gatherer.models import YtSearchPattern
 from gatherer.models import YtChannel
 from gatherer.models import Update
-from gatherer.tools import youtube_finder
+from gatherer.tools import youtube_finder, VideoDuration, EventType
 logger = logging.getLogger("django")
 
 #dev tools
@@ -117,7 +117,8 @@ class VideoAdmin(admin.ModelAdmin):
     add_tags.short_description = "Add Tags"
 
 class YtSearchPatternAdmin(admin.ModelAdmin):
-    list_display = ('channel', 'search_query', 'duration', 'event_type')
+    list_display = ('channel', 'search_query', 'duration', 'event_type',
+    'tags_list',)
     autocomplete_fields = ('channel', 'tags' )
     fieldsets = (
         ("Search", {
@@ -131,6 +132,11 @@ class YtSearchPatternAdmin(admin.ModelAdmin):
         #    'fields': ('published_before', 'published_after'),
         #}),
     )
+    def tags_list(self, obj):
+        return [ a for a in obj.tags.all()]
+    tags_list.short_description = "Tags"
+    tags_list.admin_order_field = 'tags'
+
     def channel(self, obj):
         return obj.channel.title
     channel.admin_order_field = 'channel__title'
@@ -154,8 +160,10 @@ class YtSearchPatternAdmin(admin.ModelAdmin):
             channel_id = YtChannel.objects.get(id=channel_pk).channel_id
             search_params = {'channel_id':channel_id,
                     'search_query': params['search_query'],
-                    'duration': params['duration'],
-                    'event_type': params['event_type'], }
+                    'duration': VideoDuration(params['duration']),}
+            event_type = params['event_type']
+            if event_type:
+                search_params.update({'event_type': EventType(event_type)})
             videos = youtube_finder.search_videos(**search_params)
             context = dict(
                     videos=videos,
@@ -165,6 +173,8 @@ class YtSearchPatternAdmin(admin.ModelAdmin):
             #ERROR: request method not allowed
             pass
         #!TODO: show error
+        #!TODO: convert video in Django Video type. 
+        #       templates should not depend on the video type of the api 
         return TemplateResponse(request, "admin/video_table.html",context)
 
 class TagAdmin(admin.ModelAdmin):

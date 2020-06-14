@@ -7,6 +7,10 @@ __pycache__/
 myvenv/
 .venv/
 
+# django 
+migrations/
+manage.py
+
 # C extensions
 *.so
 

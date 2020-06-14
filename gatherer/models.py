@@ -51,20 +51,20 @@ class YoutubeVideo(Video):
             ('upcoming', 'upcoming broadcasts')
     ]
     URL_BASE = "http://youtube.de/watch?v="
-    video_id = models.CharField(max_length=255)
+    video_id = models.CharField(max_length=255, unique=True)
     live_broadcast = models.CharField(max_length=9, choices=EVENT_TYPE_CHOICES,
             default='', blank=True)
     channel_id = models.CharField(max_length=255)
 
-    def __init__(self, *args, **kwargs):
-        #if videos in DB this error occurs:
-        #django.db.utils.IntegrityError: UNIQUE constraint failed: gatherer_video.link
-        super().__init__(*args, **kwargs)
-        self.link = self.URL_BASE + self.video_id
+    #def __init__(self, *args, **kwargs):
+    #    #if videos in DB this error occurs:
+    #    #django.db.utils.IntegrityError: UNIQUE constraint failed: gatherer_video.link
+    #    super().__init__(*args, **kwargs)
+    #    #self.link = self.URL_BASE + self.video_id
 
-    def save(self, *args, **kwargs):
-        self.link = self.URL_BASE + self.video_id
-        return super().save(*args, **kwargs)
+    #def save(self, *args, **kwargs):
+    #    #self.link = self.URL_BASE + self.video_id
+    #    return super().save(*args, **kwargs)
 
 
 class YtSearchPattern(models.Model):
@@ -83,7 +83,7 @@ class YtSearchPattern(models.Model):
     SEARCH_HELP = "use the Boolean NOT (-) and OR (|) operators to exclude " + \
             "videos or to find videos that are associated with one of several search terms."
 
-    search_query  = models.CharField(max_length=255, help_text=SEARCH_HELP)
+    search_query  = models.CharField(max_length=255, blank=True, help_text=SEARCH_HELP)
     duration = models.CharField(max_length=6, choices=DURATION_CHOICES,
             default='long')
     event_type = models.CharField(max_length=9, choices=YoutubeVideo.EVENT_TYPE_CHOICES,
@@ -105,18 +105,20 @@ class YtSearchPattern(models.Model):
                 published_after=self.published_after)
         with transaction.atomic():
             video_models_status = [
-                    YoutubeVideo.objects.update_or_create(title=v.title,
+                    YoutubeVideo.objects.update_or_create(video_id=v.video_id,
+                        defaults = dict(title=v.title,
                         description=v.description,
                         image=v.image_url,
+                        link=YoutubeVideo.URL_BASE + v.video_id,
                         published_at=dateparse.parse_datetime(v.published_at),
                         duration=dateparse.parse_duration(v.duration),
                         video_id=v.video_id,
                         channel_id=v.channel_id,
-                        live_broadcast=v.live_broadcast,update=update)
+                        live_broadcast=v.live_broadcast,update=update))
                     for v in videos]
-        if self.tags.all():
-            for obj, _ in video_models_status:
-                obj.tags.add(*self.tags.all())
+            if self.tags.all():
+                for obj, _ in video_models_status:
+                    obj.tags.add(*self.tags.all())
         return video_models_status #( obj, was_added)
 
 class UpdateManager(models.Manager):
