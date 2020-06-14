@@ -98,6 +98,11 @@ class YtSearchPattern(models.Model):
 
     def save_videos(self):
         """ fetch videos and save to db. """
+        # @TODO: - only fetch new videos:
+        #           if videos on the fist page (ordered by date)
+        #           not new, there are no new videos.
+        #        - need to add serach_videos with result in pages,
+        #           to youtube_finder.
         search_params = dict(
                 channel_id=self.channel.channel_id,
                 search_query=self.search_query,
@@ -131,8 +136,6 @@ class YtSearchPattern(models.Model):
 class UpdateManager(models.Manager):
 
     def make_update(self):
-        # @TODO: - only create new update if really videos added.
-        #        - only link added videos to update 
         new_update = self.model()
         new_update.save()
         update_status = []
