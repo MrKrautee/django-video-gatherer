@@ -173,6 +173,7 @@ class FbSearchPattern(SearchPattern):
     def save_videos(self):
         logger.debug("save facebook videos")
         logger.debug("\t not impemented, yet!")
+        return ()
 
     class Meta:
         unique_together = [['site', 'search_query']]

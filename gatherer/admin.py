@@ -21,6 +21,7 @@ from gatherer.models import YtChannel
 from gatherer.models import FbSite
 from gatherer.models import Update
 from gatherer.tools import youtube_finder, VideoDuration, EventType
+from gatherer.tools import facebook_finder
 logger = logging.getLogger("django")
 
 #dev tools
@@ -197,12 +198,33 @@ class FbSearchPatternAdmin(SearchPatternAdmin):
 
     def get_urls(self):
         urls = super().get_urls()
-        # @TODO
-
-        return urls
+        opts = self.opts
+        my_urls = [
+                path('find/',
+                    self.admin_site.admin_view(self.find),
+                    name="%s_%s_find"%(opts.app_label, opts.model_name)
+                ),
+        ]
+        return my_urls + urls
 
     def find(self, request):
-        pass
+        if request.method == "GET":
+            params = request.GET
+            site_pk = params['site_pk']
+            slug = FbSite.objects.get(id=site_pk).slug
+            search_query = params['search_query']
+            videos = facebook_finder.search(slug, search_query)
+            context = dict(
+                    videos=videos,
+                    opts = self.opts,
+            )
+        else:
+            #ERROR: request method not allowed
+            pass
+        #!TODO: show error
+        #!TODO: convert video in Django Video type. 
+        #       templates should not depend on the video type of the api 
+        return TemplateResponse(request, "admin/video_table.html",context)
 
 class FbSiteAdmin(admin.ModelAdmin):
     list_display = ('slug', )
