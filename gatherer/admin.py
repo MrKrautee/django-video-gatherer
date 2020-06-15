@@ -16,7 +16,9 @@ from django.forms import modelformset_factory
 from gatherer.models import Video
 from gatherer.models import Tag
 from gatherer.models import YtSearchPattern
+from gatherer.models import FbSearchPattern
 from gatherer.models import YtChannel
+from gatherer.models import FbSite
 from gatherer.models import Update
 from gatherer.tools import youtube_finder, VideoDuration, EventType
 logger = logging.getLogger("django")
@@ -116,9 +118,17 @@ class VideoAdmin(admin.ModelAdmin):
         ], context)
     add_tags.short_description = "Add Tags"
 
-class YtSearchPatternAdmin(admin.ModelAdmin):
+class SearchPatternAdmin(admin.ModelAdmin):
+
+    autocomplete_fields = ('tags', )
+    def tag_list(self, obj):
+        return [ a for a in obj.tags.all()]
+    tag_list.short_description = "Tags"
+    tag_list.admin_order_field = 'tags'
+
+class YtSearchPatternAdmin(SearchPatternAdmin):
     list_display = ('channel', 'search_query', 'duration', 'event_type',
-    'tags_list',)
+    'tag_list',)
     autocomplete_fields = ('channel', 'tags' )
     fieldsets = (
         ("Search", {
@@ -132,10 +142,6 @@ class YtSearchPatternAdmin(admin.ModelAdmin):
         #    'fields': ('published_before', 'published_after'),
         #}),
     )
-    def tags_list(self, obj):
-        return [ a for a in obj.tags.all()]
-    tags_list.short_description = "Tags"
-    tags_list.admin_order_field = 'tags'
 
     def channel(self, obj):
         return obj.channel.title
@@ -177,6 +183,33 @@ class YtSearchPatternAdmin(admin.ModelAdmin):
         #       templates should not depend on the video type of the api 
         return TemplateResponse(request, "admin/video_table.html",context)
 
+class FbSearchPatternAdmin(SearchPatternAdmin):
+    list_display = ('site', 'search_query', 'tag_list')
+    fieldsets = (
+        ("Search", {
+            'fields': ('site', 'search_query')
+        }),
+        ("add to Videos", {
+            'fields': ('tags',)
+        }),
+    )
+    autocomplete_fields = ('tags', 'site')
+
+    def get_urls(self):
+        urls = super().get_urls()
+        # @TODO
+
+        return urls
+
+    def find(self, request):
+        pass
+
+class FbSiteAdmin(admin.ModelAdmin):
+    list_display = ('slug', )
+    list_display_links = ('slug',)
+    search_fields = ('slug',)
+    # readonly_fields = ('slug',)
+
 class TagAdmin(admin.ModelAdmin):
     list_display = ('name', )
     search_fields = ['name']
@@ -198,6 +231,8 @@ class UpdateAdmin(admin.ModelAdmin):
 
 admin.site.register(Video, VideoAdmin)
 admin.site.register(YtSearchPattern, YtSearchPatternAdmin)
+admin.site.register(FbSearchPattern, FbSearchPatternAdmin)
 admin.site.register(Tag, TagAdmin)
 admin.site.register(YtChannel, YtChannelAdmin)
+admin.site.register(FbSite, FbSiteAdmin)
 admin.site.register(Update, UpdateAdmin)

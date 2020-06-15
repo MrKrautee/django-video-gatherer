@@ -164,6 +164,9 @@ class FbSite(models.Model):
     def url(self):
         return urljoin(FB_BASE_URL, self.slug)
 
+    def __str__(self):
+        return f"{self.slug}"
+
 class FbSearchPattern(SearchPattern):
     site = models.ForeignKey(FbSite, on_delete=models.CASCADE)
 
@@ -173,6 +176,7 @@ class FbSearchPattern(SearchPattern):
 
     class Meta:
         unique_together = [['site', 'search_query']]
+
 
 class UpdateManager(models.Manager):
 
