@@ -43,7 +43,8 @@ class Video(models.Model):
     published_at = models.DateTimeField(blank=True, null=True)
 
     tags = models.ManyToManyField(Tag, blank=True)
-    update = models.ForeignKey('Update', on_delete=models.CASCADE, blank=True)
+    update = models.ForeignKey('Update', on_delete=models.CASCADE, blank=True,
+                               null=True)
     #yt_search_patter = models.ForeignKey(YtSearchPattern, 
     #        on_delete=models.SET_NULL, blank=True, null=True)
 
@@ -116,7 +117,7 @@ class YtSearchPattern(SearchPattern):
     class Meta:
         unique_together = [['channel', 'search_query']]
 
-    def save_videos(self, update):
+    def save_videos(self):
         logger.debug("save youtube videos")
         """ fetch videos and save to db. """
         # @TODO: - only fetch new videos:
@@ -147,7 +148,6 @@ class YtSearchPattern(SearchPattern):
                         duration=dateparse.parse_duration(v.duration),
                         youtube_id=v.video_id,
                         channel_id=v.channel_id,
-                        update=update,
                         live_broadcast=v.live_broadcast))
                     for v in videos]
             # add tags
@@ -182,7 +182,7 @@ class FacebookVideo(Video):
 class FbSearchPattern(SearchPattern):
     site = models.ForeignKey(FbSite, on_delete=models.CASCADE)
 
-    def save_videos(self, update):
+    def save_videos(self):
         logger.debug("save facebook videos")
         videos = facebook_finder.search(self.site.slug, self.search_query)
         with transaction.atomic():
@@ -200,7 +200,6 @@ class FbSearchPattern(SearchPattern):
                             'link': FacebookVideo.URL_TEMPLATE % (self.site.slug,
                                                                  v['video_id']),
                             'video_id': v['video_id'],
-                            'update': update,
                         }
                     ) for v in videos]
             if self.tags.all():
@@ -222,7 +221,7 @@ class UpdateManager(models.Manager):
             sp_objects = SearchPattern.objects.all()
             videos = []
             for sp in sp_objects:
-                status = sp.save_videos(new_update)
+                status = sp.save_videos()
                 update_status.extend(status)
         for video, status in update_status:
             if status:
