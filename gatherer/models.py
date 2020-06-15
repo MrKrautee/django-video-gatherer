@@ -1,3 +1,6 @@
+import logging
+from urllib.parse import urljoin
+
 from django.db import models
 from django.utils import dateparse
 from django.db import transaction
@@ -5,6 +8,7 @@ from django.db import transaction
 #from gatherer.lib.youtube import YoutubeVideoFinder
 from gatherer.tools import youtube_finder, EventType, VideoDuration
 # Create your models here.
+logger = logging.getLogger("django")
 
 class Tag(models.Model):
     name = models.CharField(max_length=255, unique=True, verbose_name="tag name")
@@ -46,14 +50,15 @@ class Video(models.Model):
 class YoutubeVideo(Video):
     EVENT_TYPE_CHOICES = [
             ('', 'no broadcasts'),
-            ('completed', 'completed broadcasts'),
-            ('live', 'active broadcasts'),
-            ('upcoming', 'upcoming broadcasts')
+            (EventType.COMPLETED.value, 'completed broadcasts'),
+            (EventType.LIVE.value, 'active broadcasts'),
+            (EventType.UPCOMING.value, 'upcoming broadcasts')
     ]
     URL_BASE = "http://youtube.de/watch?v="
     video_id = models.CharField(max_length=255, unique=True)
     live_broadcast = models.CharField(max_length=9, choices=EVENT_TYPE_CHOICES,
             default='', blank=True)
+    # @TODO: foreign key to channel
     channel_id = models.CharField(max_length=255)
 
     #def __init__(self, *args, **kwargs):
@@ -66,8 +71,25 @@ class YoutubeVideo(Video):
     #    #self.link = self.URL_BASE + self.video_id
     #    return super().save(*args, **kwargs)
 
+class SearchPattern(models.Model):
 
-class YtSearchPattern(models.Model):
+    SEARCH_HELP = "use the Boolean NOT (-) and OR (|) operators to exclude " + \
+            "videos or to find videos that are associated with one of several search terms."
+
+    # search parameter
+    search_query  = models.CharField(max_length=255, blank=True, help_text=SEARCH_HELP)
+
+    # add to matching videos
+    tags = models.ManyToManyField(Tag, blank=True)
+
+    def save_videos(self):
+        raise Exception("save_videos is not implemented")
+
+    class Meta:
+        abstract = True
+
+
+class YtSearchPattern(SearchPattern):
     """
         addtional adjustments:
             * search_in_title_only bool
@@ -75,15 +97,11 @@ class YtSearchPattern(models.Model):
 
     """
     DURATION_CHOICES = [
-            ('any', 'any'),
-            ('long', 'longer than 20 mins'),
-            ('medium', 'between 4 and 20 mins'),
-            ('short', 'less than 4 mins')
+            (VideoDuration.ANY.value, 'any'),
+            (VideoDuration.LONG.value, 'longer than 20 mins'),
+            (VideoDuration.MEDIUM.value, 'between 4 and 20 mins'),
+            (VideoDuration.SHORT.value, 'less than 4 mins')
     ]
-    SEARCH_HELP = "use the Boolean NOT (-) and OR (|) operators to exclude " + \
-            "videos or to find videos that are associated with one of several search terms."
-
-    search_query  = models.CharField(max_length=255, blank=True, help_text=SEARCH_HELP)
     duration = models.CharField(max_length=6, choices=DURATION_CHOICES,
             default='long')
     event_type = models.CharField(max_length=9, choices=YoutubeVideo.EVENT_TYPE_CHOICES,
@@ -91,12 +109,12 @@ class YtSearchPattern(models.Model):
     published_before = models.DateTimeField(blank=True, null=True)
     published_after = models.DateTimeField(blank=True, null=True)
     channel = models.ForeignKey(YtChannel, on_delete=models.CASCADE)
-    tags = models.ManyToManyField(Tag, blank=True)
 
     class Meta:
         unique_together = [['channel', 'search_query']]
 
     def save_videos(self):
+        logger.debug("save youtube videos")
         """ fetch videos and save to db. """
         # @TODO: - only fetch new videos:
         #           if videos on the fist page (ordered by date)
@@ -128,10 +146,33 @@ class YtSearchPattern(models.Model):
                         channel_id=v.channel_id,
                         live_broadcast=v.live_broadcast))
                     for v in videos]
+            # add tags
             if self.tags.all():
                 for obj, _ in video_models_status:
                     obj.tags.add(*self.tags.all())
         return video_models_status #( obj, was_added)
+
+class FbSite(models.Model):
+
+    FB_BASE_URL = "https://www.facebook.com"
+    slug = models.CharField(max_length=255, blank=False, unique=True)
+
+    # @TODO: - name
+    #        - description / mission 
+
+    @property
+    def url(self):
+        return urljoin(FB_BASE_URL, self.slug)
+
+class FbSearchPattern(SearchPattern):
+    site = models.ForeignKey(FbSite, on_delete=models.CASCADE)
+
+    def save_videos(self):
+        logger.debug("save facebook videos")
+        logger.debug("\t not impemented, yet!")
+
+    class Meta:
+        unique_together = [['site', 'search_query']]
 
 class UpdateManager(models.Manager):
 
@@ -152,7 +193,9 @@ class UpdateManager(models.Manager):
         return new_update
 
 class Update(models.Model):
-    VIDEO_SEARCH_PATTERNS = (YtSearchPattern,)
+
+    VIDEO_SEARCH_PATTERNS = (YtSearchPattern, FbSearchPattern)
+
     date_time = models.DateTimeField(auto_now=True)
 
     objects = UpdateManager()
