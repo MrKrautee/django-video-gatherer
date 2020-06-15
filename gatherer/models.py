@@ -1,4 +1,6 @@
 import logging
+from datetime import datetime
+from datetime import timedelta
 from urllib.parse import urljoin
 
 from django.db import models
@@ -7,6 +9,7 @@ from django.db import transaction
 
 #from gatherer.lib.youtube import YoutubeVideoFinder
 from gatherer.tools import youtube_finder, EventType, VideoDuration
+from gatherer.tools import facebook_finder
 # Create your models here.
 logger = logging.getLogger("django")
 
@@ -55,7 +58,7 @@ class YoutubeVideo(Video):
             (EventType.UPCOMING.value, 'upcoming broadcasts')
     ]
     URL_BASE = "http://youtube.de/watch?v="
-    video_id = models.CharField(max_length=255, unique=True)
+    youtube_id = models.CharField(max_length=255, unique=True)
     live_broadcast = models.CharField(max_length=9, choices=EVENT_TYPE_CHOICES,
             default='', blank=True)
     # @TODO: foreign key to channel
@@ -71,8 +74,8 @@ class YoutubeVideo(Video):
     #    #self.link = self.URL_BASE + self.video_id
     #    return super().save(*args, **kwargs)
 
-class SearchPattern(models.Model):
 
+class SearchPattern(models.Model):
     SEARCH_HELP = "use the Boolean NOT (-) and OR (|) operators to exclude " + \
             "videos or to find videos that are associated with one of several search terms."
 
@@ -113,7 +116,7 @@ class YtSearchPattern(SearchPattern):
     class Meta:
         unique_together = [['channel', 'search_query']]
 
-    def save_videos(self):
+    def save_videos(self, update):
         logger.debug("save youtube videos")
         """ fetch videos and save to db. """
         # @TODO: - only fetch new videos:
@@ -135,15 +138,16 @@ class YtSearchPattern(SearchPattern):
                 **search_params)
         with transaction.atomic():
             video_models_status = [
-                    YoutubeVideo.objects.update_or_create(video_id=v.video_id,
+                    YoutubeVideo.objects.update_or_create(youtube_id=v.video_id,
                         defaults = dict(title=v.title,
                         description=v.description,
                         image=v.image_url,
                         link=v.url,
                         published_at=dateparse.parse_datetime(v.published_at),
                         duration=dateparse.parse_duration(v.duration),
-                        video_id=v.video_id,
+                        youtube_id=v.video_id,
                         channel_id=v.channel_id,
+                        update=update,
                         live_broadcast=v.live_broadcast))
                     for v in videos]
             # add tags
@@ -153,7 +157,6 @@ class YtSearchPattern(SearchPattern):
         return video_models_status #( obj, was_added)
 
 class FbSite(models.Model):
-
     FB_BASE_URL = "https://www.facebook.com"
     slug = models.CharField(max_length=255, blank=False, unique=True)
 
@@ -167,13 +170,43 @@ class FbSite(models.Model):
     def __str__(self):
         return f"{self.slug}"
 
+
+class FacebookVideo(Video):
+    URL_BASE = "https://facebook.com/"
+    URL_TEMPLATE = URL_BASE + "%s/videos/%s"
+
+    site = models.ForeignKey(FbSite, on_delete=models.CASCADE)
+    video_id = models.CharField(max_length=255, unique=True)
+
+
 class FbSearchPattern(SearchPattern):
     site = models.ForeignKey(FbSite, on_delete=models.CASCADE)
 
-    def save_videos(self):
+    def save_videos(self, update):
         logger.debug("save facebook videos")
-        logger.debug("\t not impemented, yet!")
-        return ()
+        videos = facebook_finder.search(self.site.slug, self.search_query)
+        with transaction.atomic():
+            video_models_status = [
+                    FacebookVideo.objects.update_or_create(video_id=v['video_id'],
+                        defaults = {
+                            'description': v['description'],
+                            'title': v['title'],
+                            'image': v['image_url'],
+                            'link': v['url'],
+                            'published_at':
+                                datetime.fromtimestamp(v['published_at']),
+                            'duration': timedelta(minutes=v['duration']),
+                            'site': self.site,
+                            'link': FacebookVideo.URL_TEMPLATE % (self.site.slug,
+                                                                 v['video_id']),
+                            'video_id': v['video_id'],
+                            'update': update,
+                        }
+                    ) for v in videos]
+            if self.tags.all():
+                for obj, _ in video_models_status:
+                    obj.tags.add(*self.tags.all())
+        return video_models_status
 
     class Meta:
         unique_together = [['site', 'search_query']]
@@ -189,7 +222,7 @@ class UpdateManager(models.Manager):
             sp_objects = SearchPattern.objects.all()
             videos = []
             for sp in sp_objects:
-                status = sp.save_videos()
+                status = sp.save_videos(new_update)
                 update_status.extend(status)
         for video, status in update_status:
             if status:
@@ -200,6 +233,7 @@ class UpdateManager(models.Manager):
 class Update(models.Model):
 
     VIDEO_SEARCH_PATTERNS = (YtSearchPattern, FbSearchPattern)
+    #VIDEO_SEARCH_PATTERNS = (FbSearchPattern,)
 
     date_time = models.DateTimeField(auto_now=True)
 
