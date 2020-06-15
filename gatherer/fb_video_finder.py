@@ -89,7 +89,7 @@ class FacebookVideoFinder:
             'title': video['text'][:110],
             'description': video['text'],
             'published_at': video['publish_time'],
-            'duration': video['duration']
+            'duration': int(video['duration'])
 
         }
     def search(self, site_name_slug, search_query: str):
