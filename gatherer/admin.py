@@ -2,17 +2,14 @@ import logging
 import urllib
 import re
 
-from django.contrib import admin
-from django.template.response import TemplateResponse
 from django.urls import path
-# add tags
+from django.contrib import admin
 from django.contrib import messages
 from django.contrib.admin import helpers
 from django.contrib.admin.utils import model_ngettext
-#from django.core.exceptions import PermissionDenied
-from django.template.response import TemplateResponse
 from django.utils.translation import gettext as _, gettext_lazy
 from django.utils.html import format_html
+from django.template.response import TemplateResponse
 from django.forms import modelformset_factory
 
 from gatherer.models import Video
@@ -24,9 +21,10 @@ from gatherer.models import FbSite
 from gatherer.models import Update
 from gatherer.tools import youtube_finder, VideoDuration, EventType
 from gatherer.tools import facebook_finder
+
 logger = logging.getLogger("django")
 
-# @TODO: only working for simple serach terms.
+# @TODO: only working for simple search terms.
 def highlight_text(text:str, match:str):
     pattern = re.compile(match, re.IGNORECASE)
     result = pattern.search(text)
@@ -43,6 +41,7 @@ def highlight_search(videos: list, search_query:str):
         v['description'] = highlight_text(v.get('description'), search_query)
     return videos
 
+
 class VideoTypeListFilter(admin.SimpleListFilter):
     title = _("video type")
     parameter_name = "type"
@@ -58,6 +57,7 @@ class VideoTypeListFilter(admin.SimpleListFilter):
             if video.type != self.value():
                 qs = qs.exclude(id=video.id)
         return qs
+
 
 class VideoAdmin(admin.ModelAdmin):
     list_display = ('is_active', 'title', 'short_description', 'tags_list',
@@ -121,8 +121,6 @@ class VideoAdmin(admin.ModelAdmin):
         #!HACK: use model form to get fancy autocomple in an easy way
         title = _("Add Tags to Video")
         ModelForm = self.get_form(request)
-        # The user has already confirmed the deletion.
-        # Do the deletion and return None to display the change list view again.
         if request.POST.get('post'):
             form = ModelForm(request.POST)
             tag_ids = form.data.getlist('tags')
@@ -161,6 +159,7 @@ class VideoAdmin(admin.ModelAdmin):
         ], context)
     add_tags.short_description = "Add Tags"
 
+
 class SearchPatternAdmin(admin.ModelAdmin):
 
     autocomplete_fields = ('tags', )
@@ -169,7 +168,9 @@ class SearchPatternAdmin(admin.ModelAdmin):
     tag_list.short_description = "Tags"
     tag_list.admin_order_field = 'tags'
 
+
 class YtSearchPatternAdmin(SearchPatternAdmin):
+
     list_display = ('channel', 'search_query', 'duration', 'event_type',
     'tag_list',)
     autocomplete_fields = ('channel', 'tags' )
@@ -226,6 +227,7 @@ class YtSearchPatternAdmin(SearchPatternAdmin):
         #       templates should not depend on the video type of the api 
         return TemplateResponse(request, "admin/video_table.html",context)
 
+
 class FbSearchPatternAdmin(SearchPatternAdmin):
     list_display = ('site', 'search_query', 'tag_list')
     fieldsets = (
@@ -269,15 +271,18 @@ class FbSearchPatternAdmin(SearchPatternAdmin):
         #       templates should not depend on the video type of the api 
         return TemplateResponse(request, "admin/video_table.html",context)
 
+
 class FbSiteAdmin(admin.ModelAdmin):
     list_display = ('slug', )
     list_display_links = ('slug',)
     search_fields = ('slug',)
     # readonly_fields = ('slug',)
 
+
 class TagAdmin(admin.ModelAdmin):
     list_display = ('name', )
     search_fields = ['name']
+
 
 class YtChannelAdmin(admin.ModelAdmin):
     list_display = ('title', 'channel_id')
@@ -290,6 +295,7 @@ class YtChannelAdmin(admin.ModelAdmin):
         obj.title = channel.title
         obj.description = channel.description
         super().save_model(request, obj, form, change)
+
 
 class UpdateAdmin(admin.ModelAdmin):
     list_display = ('date_time', 'video_count')
@@ -310,7 +316,7 @@ class UpdateAdmin(admin.ModelAdmin):
         videos_str = "".join(videos_str_list)
         return format_html(f"<ul>{videos_str}</ul>")
     videos.short_description = "videos updated"
-    #videos.allow_tags = True
+
 
 admin.site.register(Video, VideoAdmin)
 admin.site.register(YtSearchPattern, YtSearchPatternAdmin)
