@@ -1,5 +1,6 @@
 import logging
 import urllib
+import re
 
 from django.contrib import admin
 from django.template.response import TemplateResponse
@@ -25,6 +26,38 @@ from gatherer.tools import youtube_finder, VideoDuration, EventType
 from gatherer.tools import facebook_finder
 logger = logging.getLogger("django")
 
+# @TODO: only working for simple serach terms.
+def highlight_text(text:str, match:str):
+    pattern = re.compile(match, re.IGNORECASE)
+    result = pattern.search(text)
+    if result:
+        hi_match = f'<span style="background-color: #FFFF00">{result.group(0)}</span>'
+        new_text = pattern.sub(hi_match, text)
+        return format_html(new_text)
+    else:
+        return text
+
+def highlight_search(videos: list, search_query:str):
+    for v in videos:
+        v['title'] = highlight_text(v.get('title'), search_query)
+        v['description'] = highlight_text(v.get('description'), search_query)
+    return videos
+
+class VideoTypeListFilter(admin.SimpleListFilter):
+    title = _("video type")
+    parameter_name = "type"
+
+    def lookups(self, request, model_admin):
+        return [('facebookvideo', 'Facebook'),
+                ('youtubevideo', 'YouTube')]
+    def queryset(self, request, qs):
+        if not self.value():
+            return qs
+        # @TODO: !!dirty!!
+        for video in qs:
+            if video.type != self.value():
+                qs = qs.exclude(id=video.id)
+        return qs
 
 class VideoAdmin(admin.ModelAdmin):
     list_display = ('is_active', 'title', 'short_description', 'tags_list',
@@ -32,11 +65,12 @@ class VideoAdmin(admin.ModelAdmin):
     list_display_links = ('title', )
     list_per_page=300
     search_fields = ('title', 'description')
-    list_filter = ('is_active', 'tags__name')
+    list_filter = ('is_active', 'tags__name', VideoTypeListFilter)
     actions = ['activate', 'deactivate', 'add_tags']
     autocomplete_fields = ['tags']
-    readonly_fields = ('title', 'description', 'link', 'image', 'duration',
-            'published_at', 'update')
+    readonly_fields = ('title', 'description', 'link_link', 'image_link', 'duration',
+            'published_at', 'update', 'search_pattern_link', 'publisher')
+    exclude = ('link', 'image')
 
     def tags_list(self, obj):
         return [ a for a in obj.tags.all()]
@@ -46,6 +80,19 @@ class VideoAdmin(admin.ModelAdmin):
     def short_description(self, obj):
         return obj.description[:500]
     short_description.short_description = "Description"
+
+    def search_pattern_link(self, obj):
+        url = obj.search_pattern.get_admin_url()
+        return format_html(f"<a href='{url}'>{obj.search_pattern}</a>")
+    search_pattern_link.short_description = "search pattern"
+
+    def link_link(self, obj):
+        return format_html(f"<a href='{obj.link}' target='blank'>{obj.link}</a>")
+    link_link.short_description = _("link")
+
+    def image_link(self, obj):
+        return format_html(f"<a href='{obj.image}' target='blank'>{obj.image}</a>")
+    image_link.short_description = _("image")
 
     # --- ACTIONS
     def activate(self, request, queryset):
@@ -209,6 +256,7 @@ class FbSearchPatternAdmin(SearchPatternAdmin):
             slug = FbSite.objects.get(id=site_pk).slug
             search_query = params['search_query']
             videos = facebook_finder.search(slug, search_query)
+            videos = highlight_search(videos, search_query)
             context = dict(
                     videos=videos,
                     opts = self.opts,

@@ -123,8 +123,10 @@ crossorigin="anonymous"></script>
 						</a>
 						{% endfor %}
                         {{ video.live_broadcast }}
-                        {% if video.facebookvideo %} facebook {% else %}
-                        youtube {% endif %}
+                        
+                        {% if video.facebookvideo %}
+                        <span class="badge badge-primary">facebook {% else %}
+                        <span class="badge badge-danger">youtube {% endif %}</span>
                     </div>
                 </div>
                 <div class="row">

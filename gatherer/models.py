@@ -29,6 +29,9 @@ class YtChannel(models.Model):
     def __str__(self):
         return "%s" % self.title
 
+    def get_admin_url(self):
+        return reverse('admin:%s_%s_change' % (self._meta.app_label,
+                       self._meta.model_name), args=[self.id])
 
 
 class Video(models.Model):
@@ -56,6 +59,34 @@ class Video(models.Model):
         return reverse('admin:%s_%s_change' % (self._meta.app_label,
                        self._meta.model_name), args=[self.id])
 
+    @property
+    def type(self):
+        facebook = "facebookvideo"
+        youtube = "youtubevideo"
+        try:
+            if self.facebookvideo:
+                return facebook
+        except:
+            pass
+        try:
+            if self.youtubevideo:
+                return youtube
+        except:
+            pass
+        return ""
+
+    @property
+    def child(self):
+        return getattr(self, self.type)
+
+    @property
+    def search_pattern(self):
+        return self.child.search_pattern
+
+    @property
+    def publisher(self):
+        return self.child.publisher
+
 class YoutubeVideo(Video):
     EVENT_TYPE_CHOICES = [
             ('', 'no broadcasts'),
@@ -64,13 +95,15 @@ class YoutubeVideo(Video):
             (EventType.UPCOMING.value, 'upcoming broadcasts')
     ]
     URL_BASE = "http://youtube.de/watch?v="
-    youtube_id = models.CharField(max_length=255, unique=True)
+    video_id = models.CharField(max_length=255, unique=True)
     live_broadcast = models.CharField(max_length=9, choices=EVENT_TYPE_CHOICES,
             default='', blank=True)
-    # @TODO: foreign key to channel
-    channel_id = models.CharField(max_length=255)
-    # @TODO: foreign key to SearchPattern
+    channel = models.ForeignKey(YtChannel, on_delete=models.CASCADE)
+    search_pattern  = models.ForeignKey("YtSearchPattern", on_delete=models.CASCADE)
 
+    @property
+    def publisher(self):
+        return self.channel
     #def __init__(self, *args, **kwargs):
     #    #if videos in DB this error occurs:
     #    #django.db.utils.IntegrityError: UNIQUE constraint failed: gatherer_video.link
@@ -123,6 +156,10 @@ class YtSearchPattern(SearchPattern):
     class Meta:
         unique_together = [['channel', 'search_query']]
 
+    def get_admin_url(self):
+        return reverse('admin:%s_%s_change' % (self._meta.app_label,
+                       self._meta.model_name), args=[self.id])
+
     def save_videos(self):
         logger.debug("save youtube videos")
         """ fetch videos and save to db. """
@@ -145,22 +182,26 @@ class YtSearchPattern(SearchPattern):
                 **search_params)
         with transaction.atomic():
             video_models_status = [
-                    YoutubeVideo.objects.update_or_create(youtube_id=v.video_id,
+                    YoutubeVideo.objects.update_or_create(video_id=v.video_id,
                         defaults = dict(title=v.title,
                         description=v.description,
                         image=v.image_url,
                         link=v.url,
                         published_at=dateparse.parse_datetime(v.published_at),
                         duration=dateparse.parse_duration(v.duration),
-                        youtube_id=v.video_id,
-                        channel_id=v.channel_id,
-                        live_broadcast=v.live_broadcast))
+                        video_id=v.video_id,
+                        channel=self.channel,
+                        live_broadcast=v.live_broadcast,
+                        search_pattern=self))
                     for v in videos]
             # add tags
             if self.tags.all():
                 for obj, _ in video_models_status:
                     obj.tags.add(*self.tags.all())
         return video_models_status #( obj, was_added)
+
+    def __str__(self):
+        return f"{self.channel}, q={self.search_query}, {self.duration}"
 
 class FbSite(models.Model):
     FB_BASE_URL = "https://www.facebook.com"
@@ -176,13 +217,21 @@ class FbSite(models.Model):
     def __str__(self):
         return f"{self.slug}"
 
+    def get_admin_url(self):
+        return reverse('admin:%s_%s_change' % (self._meta.app_label,
+                       self._meta.model_name), args=[self.id])
 
 class FacebookVideo(Video):
     URL_BASE = "https://facebook.com/"
     URL_TEMPLATE = URL_BASE + "%s/videos/%s"
 
-    site = models.ForeignKey(FbSite, on_delete=models.CASCADE)
     video_id = models.CharField(max_length=255, unique=True)
+    site = models.ForeignKey(FbSite, on_delete=models.CASCADE)
+    search_pattern  = models.ForeignKey("FbSearchPattern", on_delete=models.CASCADE)
+
+    @property
+    def publisher(self):
+        return self.site
 
 
 class FbSearchPattern(SearchPattern):
@@ -206,6 +255,7 @@ class FbSearchPattern(SearchPattern):
                             'link': FacebookVideo.URL_TEMPLATE % (self.site.slug,
                                                                  v['video_id']),
                             'video_id': v['video_id'],
+                            'search_pattern': self,
                         }
                     ) for v in videos]
             if self.tags.all():
@@ -216,6 +266,12 @@ class FbSearchPattern(SearchPattern):
     class Meta:
         unique_together = [['site', 'search_query']]
 
+    def __str__(self):
+        return f"{self.site}, q={self.search_query}"
+
+    def get_admin_url(self):
+        return reverse('admin:%s_%s_change' % (self._meta.app_label,
+                       self._meta.model_name), args=[self.id])
 
 class UpdateManager(models.Manager):
 
