@@ -8,11 +8,16 @@ from django.utils import dateparse
 from django.db import transaction
 from django.urls import reverse
 
-#from gatherer.lib.youtube import YoutubeVideoFinder
 from gatherer.tools import youtube_finder, EventType, VideoDuration
 from gatherer.tools import facebook_finder
-# Create your models here.
+
 logger = logging.getLogger("django")
+
+LANGUAGE_CHOICES = [
+        ('de', 'Deutsch'),
+        ('en', 'english')
+]
+
 
 class Tag(models.Model):
     name = models.CharField(max_length=255, unique=True, verbose_name="tag name")
@@ -20,6 +25,7 @@ class Tag(models.Model):
 
     def __str__(self):
         return "%s" % self.name
+
 
 class YtChannel(models.Model):
     channel_id = models.CharField(max_length=255)
@@ -33,10 +39,7 @@ class YtChannel(models.Model):
         return reverse('admin:%s_%s_change' % (self._meta.app_label,
                        self._meta.model_name), args=[self.id])
 
-LANGUAGE_CHOICES = [
-        ('de', 'Deutsch'),
-        ('en', 'english')
-]
+
 class Video(models.Model):
 
     title = models.CharField(max_length=255)
@@ -89,6 +92,7 @@ class Video(models.Model):
     @property
     def link(self):
         return self.child.link
+
 
 class YoutubeVideo(Video):
     EVENT_TYPE_CHOICES = [
@@ -196,10 +200,11 @@ class YtSearchPattern(SearchPattern):
             if self.tags.all():
                 for obj, _ in video_models_status:
                     obj.tags.add(*self.tags.all())
-        return video_models_status #( obj, was_added)
+        return video_models_status
 
     def __str__(self):
         return f"{self.channel}, q={self.search_query}, {self.duration}"
+
 
 class FbSite(models.Model):
     FB_BASE_URL = "https://www.facebook.com"
@@ -218,6 +223,7 @@ class FbSite(models.Model):
     def get_admin_url(self):
         return reverse('admin:%s_%s_change' % (self._meta.app_label,
                        self._meta.model_name), args=[self.id])
+
 
 class FacebookVideo(Video):
     URL_BASE = "https://facebook.com/"
