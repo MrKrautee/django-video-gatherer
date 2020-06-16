@@ -123,6 +123,8 @@ crossorigin="anonymous"></script>
 						</a>
 						{% endfor %}
                         {{ video.live_broadcast }}
+                        {% if video.facebookvideo %} facebook {% else %}
+                        youtube {% endif %}
                     </div>
                 </div>
                 <div class="row">
