@@ -11,6 +11,7 @@ from django.contrib.admin.utils import model_ngettext
 #from django.core.exceptions import PermissionDenied
 from django.template.response import TemplateResponse
 from django.utils.translation import gettext as _, gettext_lazy
+from django.utils.html import format_html
 from django.forms import modelformset_factory
 
 from gatherer.models import Video
@@ -24,12 +25,6 @@ from gatherer.tools import youtube_finder, VideoDuration, EventType
 from gatherer.tools import facebook_finder
 logger = logging.getLogger("django")
 
-#dev tools
-import pprint
-def _pprint(dict_like):
-    pp = pprint.PrettyPrinter(indent=4)
-    pp.pprint(dict_like)
-# ----- dev tools
 
 class VideoAdmin(admin.ModelAdmin):
     list_display = ('is_active', 'title', 'short_description', 'tags_list',
@@ -249,7 +244,25 @@ class YtChannelAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 class UpdateAdmin(admin.ModelAdmin):
-    list_display = ('date_time',)
+    list_display = ('date_time', 'video_count')
+    readonly_fields = ('date_time', 'video_count', 'videos')
+
+    def video_count(self, obj):
+        count = obj.video_set.count()
+        return count
+    video_count.short_description = "video count"
+    video_count.admin_order_field = "video"
+
+    def videos(self, obj):
+        videos = obj.video_set.all()
+        videos_str_list = [
+                f"<li style='list-style-type:decimal;'>"
+                f"{v.published_at}: {v.title}"
+                f"[<a href='{v.get_admin_url()}'>view</a>]</li>" for v in videos]
+        videos_str = "".join(videos_str_list)
+        return format_html(f"<ul>{videos_str}</ul>")
+    videos.short_description = "videos updated"
+    #videos.allow_tags = True
 
 admin.site.register(Video, VideoAdmin)
 admin.site.register(YtSearchPattern, YtSearchPatternAdmin)

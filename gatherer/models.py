@@ -6,6 +6,7 @@ from urllib.parse import urljoin
 from django.db import models
 from django.utils import dateparse
 from django.db import transaction
+from django.urls import reverse
 
 #from gatherer.lib.youtube import YoutubeVideoFinder
 from gatherer.tools import youtube_finder, EventType, VideoDuration
@@ -51,6 +52,10 @@ class Video(models.Model):
     def __str__(self):
         return f"{self.title}\n\t{self.published_at}"
 
+    def get_admin_url(self):
+        return reverse('admin:%s_%s_change' % (self._meta.app_label,
+                       self._meta.model_name), args=[self.id])
+
 class YoutubeVideo(Video):
     EVENT_TYPE_CHOICES = [
             ('', 'no broadcasts'),
@@ -64,6 +69,7 @@ class YoutubeVideo(Video):
             default='', blank=True)
     # @TODO: foreign key to channel
     channel_id = models.CharField(max_length=255)
+    # @TODO: foreign key to SearchPattern
 
     #def __init__(self, *args, **kwargs):
     #    #if videos in DB this error occurs:
