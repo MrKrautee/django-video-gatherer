@@ -33,12 +33,14 @@ class YtChannel(models.Model):
         return reverse('admin:%s_%s_change' % (self._meta.app_label,
                        self._meta.model_name), args=[self.id])
 
-
+LANGUAGE_CHOICES = [
+        ('de', 'Deutsch'),
+        ('en', 'english')
+]
 class Video(models.Model):
 
     title = models.CharField(max_length=255)
     description = models.TextField()
-    # thumbnail link
     image = models.CharField(max_length=255)
     duration = models.DurationField(blank=True, null=True)
     is_active = models.BooleanField(default=False)
@@ -47,6 +49,7 @@ class Video(models.Model):
     tags = models.ManyToManyField(Tag, blank=True)
     update = models.ForeignKey('Update', on_delete=models.CASCADE, blank=True,
                                null=True)
+    language = models.CharField(max_length=3, choices=LANGUAGE_CHOICES, blank=False)
 
     def __str__(self):
         return f"{self.title}\n\t{self.published_at}"
@@ -118,6 +121,7 @@ class SearchPattern(models.Model):
     search_query  = models.CharField(max_length=255, blank=True, help_text=SEARCH_HELP)
     # add to matching videos
     tags = models.ManyToManyField(Tag, blank=True)
+    language = models.CharField(max_length=3, choices=LANGUAGE_CHOICES, blank=False)
 
     def save_videos(self):
         raise Exception("save_videos is not implemented")
@@ -185,7 +189,8 @@ class YtSearchPattern(SearchPattern):
                         video_id=v.video_id,
                         channel=self.channel,
                         live_broadcast=v.live_broadcast,
-                        search_pattern=self))
+                        search_pattern=self,
+                        language=self.language))
                     for v in videos]
             # add tags
             if self.tags.all():
@@ -245,13 +250,13 @@ class FbSearchPattern(SearchPattern):
                             'description': v['description'],
                             'title': v['title'],
                             'image': v['image_url'],
-                            'link': v['url'],
                             'published_at':
                                 datetime.fromtimestamp(v['published_at']),
                             'duration': timedelta(minutes=v['duration']),
                             'site': self.site,
                             'video_id': v['video_id'],
                             'search_pattern': self,
+                            'language': self.language,
                         }
                     ) for v in videos]
             if self.tags.all():

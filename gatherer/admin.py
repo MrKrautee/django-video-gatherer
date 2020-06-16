@@ -65,7 +65,7 @@ class VideoAdmin(admin.ModelAdmin):
     list_display_links = ('title', )
     list_per_page=300
     search_fields = ('title', 'description')
-    list_filter = ('is_active', 'tags__name', VideoTypeListFilter)
+    list_filter = ('is_active', 'tags__name', 'language', VideoTypeListFilter)
     actions = ['activate', 'deactivate', 'add_tags']
     autocomplete_fields = ['tags']
     readonly_fields = ('title', 'description', 'link_link', 'image_link', 'duration',
@@ -178,7 +178,7 @@ class YtSearchPatternAdmin(SearchPatternAdmin):
             'fields': ('channel', 'duration', 'event_type', 'search_query')
         }),
         ("add to Videos", {
-            'fields': ('tags',)
+            'fields': ('tags','language')
         }),
         #('Publish Time', {
         #    #'classes': ('collapsed',),
@@ -233,7 +233,7 @@ class FbSearchPatternAdmin(SearchPatternAdmin):
             'fields': ('site', 'search_query')
         }),
         ("add to Videos", {
-            'fields': ('tags',)
+            'fields': ('tags','language')
         }),
     )
     autocomplete_fields = ('tags', 'site')
