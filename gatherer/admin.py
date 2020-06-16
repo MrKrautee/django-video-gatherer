@@ -7,7 +7,7 @@ from django.contrib import admin
 from django.contrib import messages
 from django.contrib.admin import helpers
 from django.contrib.admin.utils import model_ngettext
-from django.utils.translation import gettext as _, gettext_lazy
+from django.utils.translation import gettext_lazy as _
 from django.utils.html import format_html
 from django.template.response import TemplateResponse
 from django.forms import modelformset_factory

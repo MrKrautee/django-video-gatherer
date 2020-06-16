@@ -25,6 +25,7 @@ class VideoList(ListView):
             qs = Video.objects.filter(tags__name=tag)
         else:
             qs = Video.objects.all()
+        qs = qs.filter(language=self.request.LANGUAGE_CODE)
         qs = qs.order_by(order_by)
         return qs
 

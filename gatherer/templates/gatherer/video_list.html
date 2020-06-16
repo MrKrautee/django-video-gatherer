@@ -1,3 +1,4 @@
+{% load i18n %}
 <link rel="stylesheet"
 href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
 integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
@@ -22,6 +23,10 @@ crossorigin="anonymous"></script>
 
 			}
 		});
+		$('#language').change(function(){
+				$(this).parents("form").submit();
+				//window.location="./?order_by="+$(this).val()
+		});
 	});
 </script>
 <style>
@@ -44,6 +49,27 @@ crossorigin="anonymous"></script>
 };
 </style>
 <div class="container">
+	<div class="row">
+		<div class="col-md-auto">
+			<form action="{% url 'set_language' %}" method="post" id="lang-form">{% csrf_token %}
+				<input name="next" type="hidden" value="{{ redirect_to }}">
+				<select name="language" id="language" class="custom-select custom-select-sm">
+					{% get_current_language as LANGUAGE_CODE %}
+					{% get_available_languages as LANGUAGES %}
+					{% get_language_info_list for LANGUAGES as languages %}
+					{% for language in languages %}
+						<option value="{{ language.code }}"{% if language.code == LANGUAGE_CODE %} selected{% endif %}>
+							{{ language.name_local }} ({{ language.code }})
+						</option>
+					{% endfor %}
+				</select>
+			</form>
+
+		</div>
+		<div class="col-md-auto"></div>
+		<div class="col"></div>
+</div>
+	
 <h1> Online Yogastunden </h1>
 	<div class="row">
 			<div class="col-md-auto"> nach Tags</div>
@@ -82,6 +108,25 @@ crossorigin="anonymous"></script>
 			</div>
 			<div class="col"></div>
 	</div>
+	<div class="row">
+		<div class="col-md-auto">Video Sprache</div>
+		<div class="col-md-auto">
+			<!-- @TODO: form and view-->
+			<select name="lang-video" id="lang-video" class="custom-select custom-select-sm">
+				{% get_current_language as LANGUAGE_CODE %}
+				{% get_available_languages as LANGUAGES %}
+				{% get_language_info_list for LANGUAGES as languages %}
+				<option vlaue="all">{% trans "alle" %}</option>
+				{% for language in languages %}
+					<option value="{{ language.code }}"{% if language.code == LANGUAGE_CODE %} selected{% endif %}>
+						{{ language.name_local }} ({{ language.code }})
+					</option>
+				{% endfor %}
+			</select>
+
+		</div>
+		<div class="col"></div>
+</div>
 	{{ object_list|length }} Video{{object_list|length|pluralize}} gefunden.
 </div>
 <br>
