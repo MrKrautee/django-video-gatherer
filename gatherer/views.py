@@ -32,6 +32,7 @@ class VideoList(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         tags = Tag.objects.filter(video__isnull=False).distinct()
+        tags = tags.filter(video__language=self.request.LANGUAGE_CODE)
         order_by = self.request.GET.get('order_by', self.order_by) \
                 if self.request.method == 'GET' else self.order_by
         tag = self.kwargs['tag'] if 'tag' in self.kwargs.keys() else ''
