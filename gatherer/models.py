@@ -38,8 +38,6 @@ class Video(models.Model):
 
     title = models.CharField(max_length=255)
     description = models.TextField()
-    # link to video location  
-    link = models.CharField(max_length=255, unique=True)
     # thumbnail link
     image = models.CharField(max_length=255)
     duration = models.DurationField(blank=True, null=True)
@@ -49,8 +47,6 @@ class Video(models.Model):
     tags = models.ManyToManyField(Tag, blank=True)
     update = models.ForeignKey('Update', on_delete=models.CASCADE, blank=True,
                                null=True)
-    #yt_search_patter = models.ForeignKey(YtSearchPattern, 
-    #        on_delete=models.SET_NULL, blank=True, null=True)
 
     def __str__(self):
         return f"{self.title}\n\t{self.published_at}"
@@ -87,6 +83,10 @@ class Video(models.Model):
     def publisher(self):
         return self.child.publisher
 
+    @property
+    def link(self):
+        return self.child.link
+
 class YoutubeVideo(Video):
     EVENT_TYPE_CHOICES = [
             ('', 'no broadcasts'),
@@ -104,15 +104,10 @@ class YoutubeVideo(Video):
     @property
     def publisher(self):
         return self.channel
-    #def __init__(self, *args, **kwargs):
-    #    #if videos in DB this error occurs:
-    #    #django.db.utils.IntegrityError: UNIQUE constraint failed: gatherer_video.link
-    #    super().__init__(*args, **kwargs)
-    #    #self.link = self.URL_BASE + self.video_id
 
-    #def save(self, *args, **kwargs):
-    #    #self.link = self.URL_BASE + self.video_id
-    #    return super().save(*args, **kwargs)
+    @property
+    def link(self):
+        return f"{self.URL_BASE}{self.video_id}"
 
 
 class SearchPattern(models.Model):
@@ -121,7 +116,6 @@ class SearchPattern(models.Model):
 
     # search parameter
     search_query  = models.CharField(max_length=255, blank=True, help_text=SEARCH_HELP)
-
     # add to matching videos
     tags = models.ManyToManyField(Tag, blank=True)
 
@@ -186,7 +180,6 @@ class YtSearchPattern(SearchPattern):
                         defaults = dict(title=v.title,
                         description=v.description,
                         image=v.image_url,
-                        link=v.url,
                         published_at=dateparse.parse_datetime(v.published_at),
                         duration=dateparse.parse_duration(v.duration),
                         video_id=v.video_id,
@@ -233,6 +226,11 @@ class FacebookVideo(Video):
     def publisher(self):
         return self.site
 
+    @property
+    def link(self):
+        return urljoin(self.URL_BASE,
+                       self.URL_TEMPLATE % (self.site.slug, self.video_id))
+
 
 class FbSearchPattern(SearchPattern):
     site = models.ForeignKey(FbSite, on_delete=models.CASCADE)
@@ -252,8 +250,6 @@ class FbSearchPattern(SearchPattern):
                                 datetime.fromtimestamp(v['published_at']),
                             'duration': timedelta(minutes=v['duration']),
                             'site': self.site,
-                            'link': FacebookVideo.URL_TEMPLATE % (self.site.slug,
-                                                                 v['video_id']),
                             'video_id': v['video_id'],
                             'search_pattern': self,
                         }
