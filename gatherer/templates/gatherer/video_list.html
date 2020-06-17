@@ -18,7 +18,6 @@ crossorigin="anonymous"></script>
 	$( document ).ready(function() {
 		$('#filter').change(function(){
 			if($(this).val() != ""){
-				console.log($(this).val());
 				window.location="./?order_by="+$(this).val();
 
 			}
@@ -26,6 +25,13 @@ crossorigin="anonymous"></script>
 		$('#language').change(function(){
 				$(this).parents("form").submit();
 				//window.location="./?order_by="+$(this).val()
+		});
+		$('#video_lang').change(function(){
+			if($(this).val() != ""){
+				console.log($(this).val());
+				window.location="./?video_lang="+$(this).val();
+
+			}
 		});
 	});
 </script>
@@ -112,13 +118,13 @@ crossorigin="anonymous"></script>
 		<div class="col-md-auto">Video Sprache</div>
 		<div class="col-md-auto">
 			<!-- @TODO: form and view-->
-			<select name="lang-video" id="lang-video" class="custom-select custom-select-sm">
+			<select name="video_lang" id="video_lang" class="custom-select custom-select-sm">
 				{% get_current_language as LANGUAGE_CODE %}
 				{% get_available_languages as LANGUAGES %}
 				{% get_language_info_list for LANGUAGES as languages %}
-				<option vlaue="all">{% trans "alle" %}</option>
+				<option value="all" {% if "all" == video_lang %} selected{% endif %}>{% trans "alle" %}</option>
 				{% for language in languages %}
-					<option value="{{ language.code }}"{% if language.code == LANGUAGE_CODE %} selected{% endif %}>
+					<option value="{{ language.code }}"{% if language.code == video_lang %} selected{% endif %}>
 						{{ language.name_local }} ({{ language.code }})
 					</option>
 				{% endfor %}

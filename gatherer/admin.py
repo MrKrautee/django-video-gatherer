@@ -11,6 +11,7 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.html import format_html
 from django.template.response import TemplateResponse
 from django.forms import modelformset_factory
+from django.contrib.sessions.models import Session
 
 from gatherer.models import Video
 from gatherer.models import Tag
@@ -325,3 +326,4 @@ admin.site.register(Tag, TagAdmin)
 admin.site.register(YtChannel, YtChannelAdmin)
 admin.site.register(FbSite, FbSiteAdmin)
 admin.site.register(Update, UpdateAdmin)
+admin.site.register(Session)
