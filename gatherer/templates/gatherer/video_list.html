@@ -76,9 +76,9 @@ crossorigin="anonymous"></script>
 		<div class="col"></div>
 </div>
 	
-<h1> Online Yogastunden </h1>
+<h1> {% trans "Online Yogastunden" %} </h1>
 	<div class="row">
-			<div class="col-md-auto"> nach Tags</div>
+			<div class="col-md-auto">{% trans "nach Tags" %}</div>
 			<div class="col-md-auto">
 				<a href="{% url "videos" %}" 
 				{% if current_tag == "" %}
@@ -86,7 +86,7 @@ crossorigin="anonymous"></script>
 				{% else %}
 						class="badge badge-dark">
 				{% endif %}
-				Alle</a>
+				{% trans "Alle" %}</a>
 				{% for tag in tags %}
 				{% localize_tag_slug tag LANGUAGE_CODE as tag_slug %}
 				<a href="{% url "videos" %}{{ tag_slug }}" 
@@ -101,7 +101,7 @@ crossorigin="anonymous"></script>
 			</div>
 	</div>
 	<div class="row">
-			<div class="col-md-auto">sortieren nach</div>
+			<div class="col-md-auto">{% trans "sortieren nach" %}</div>
 			<div class="col-md-auto">
 				<select class="custom-select custom-select-sm" id="filter">
 						{% for param, name in order_options.items %}
@@ -116,7 +116,7 @@ crossorigin="anonymous"></script>
 			<div class="col"></div>
 	</div>
 	<div class="row">
-		<div class="col-md-auto">Video Sprache</div>
+		<div class="col-md-auto">{% trans "Video Sprache" %}</div>
 		<div class="col-md-auto">
 			<!-- @TODO: form and view-->
 			<select name="video_lang" id="video_lang" class="custom-select custom-select-sm">
