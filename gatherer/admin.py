@@ -12,9 +12,11 @@ from django.utils.html import format_html
 from django.template.response import TemplateResponse
 from django.forms import modelformset_factory
 from django.contrib.sessions.models import Session
+from django.conf import settings
 
 from gatherer.models import Video
 from gatherer.models import Tag
+from gatherer.models import TagContent
 from gatherer.models import YtSearchPattern
 from gatherer.models import FbSearchPattern
 from gatherer.models import YtChannel
@@ -66,7 +68,7 @@ class VideoAdmin(admin.ModelAdmin):
     list_display_links = ('title', )
     list_per_page=300
     search_fields = ('title', 'description')
-    list_filter = ('is_active', 'tags__name', 'language', VideoTypeListFilter)
+    list_filter = ('is_active', 'tags', 'language', VideoTypeListFilter) 
     actions = ['activate', 'deactivate', 'add_tags']
     autocomplete_fields = ['tags']
     readonly_fields = ('title', 'description', 'link_link', 'image_link', 'duration',
@@ -163,7 +165,7 @@ class VideoAdmin(admin.ModelAdmin):
 
 class SearchPatternAdmin(admin.ModelAdmin):
 
-    autocomplete_fields = ('tags', )
+    # autocomplete_fields = ('tags', )
     def tag_list(self, obj):
         return [ a for a in obj.tags.all()]
     tag_list.short_description = "Tags"
@@ -172,9 +174,9 @@ class SearchPatternAdmin(admin.ModelAdmin):
 
 class YtSearchPatternAdmin(SearchPatternAdmin):
 
-    list_display = ('channel', 'search_query', 'duration', 'event_type',
-    'tag_list',)
-    autocomplete_fields = ('channel', 'tags' )
+    list_display = ('channel', 'language', 'search_query', 'duration', 'event_type',
+                    'tag_list',)
+    autocomplete_fields = ('channel', 'tags')
     fieldsets = (
         ("Search", {
             'fields': ('channel', 'duration', 'event_type', 'search_query')
@@ -230,7 +232,7 @@ class YtSearchPatternAdmin(SearchPatternAdmin):
 
 
 class FbSearchPatternAdmin(SearchPatternAdmin):
-    list_display = ('site', 'search_query', 'tag_list')
+    list_display = ('site', 'language', 'search_query', 'tag_list')
     fieldsets = (
         ("Search", {
             'fields': ('site', 'search_query')
@@ -239,7 +241,7 @@ class FbSearchPatternAdmin(SearchPatternAdmin):
             'fields': ('tags','language')
         }),
     )
-    autocomplete_fields = ('tags', 'site')
+    autocomplete_fields = ( 'site', 'tags',)
 
     def get_urls(self):
         urls = super().get_urls()
@@ -279,10 +281,19 @@ class FbSiteAdmin(admin.ModelAdmin):
     search_fields = ('slug',)
     # readonly_fields = ('slug',)
 
+class TagConentInline(admin.StackedInline):
+    model = TagContent
+    extra = len(settings.LANGUAGES)
+    prepopulated_fields = { "slug": ("name",)}
 
 class TagAdmin(admin.ModelAdmin):
+    inlines = [ TagConentInline, ]
+    search_fields = ['tagcontent_name']
+
+class TagContentAdmin(admin.ModelAdmin):
     list_display = ('name', )
     search_fields = ['name']
+    prepopulated_fields = { "slug": ("name",)}
 
 
 class YtChannelAdmin(admin.ModelAdmin):
@@ -322,6 +333,7 @@ class UpdateAdmin(admin.ModelAdmin):
 admin.site.register(Video, VideoAdmin)
 admin.site.register(YtSearchPattern, YtSearchPatternAdmin)
 admin.site.register(FbSearchPattern, FbSearchPatternAdmin)
+admin.site.register(TagContent, TagContentAdmin)
 admin.site.register(Tag, TagAdmin)
 admin.site.register(YtChannel, YtChannelAdmin)
 admin.site.register(FbSite, FbSiteAdmin)

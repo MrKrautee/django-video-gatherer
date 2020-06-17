@@ -1,4 +1,4 @@
-{% load i18n %}
+{% load i18n gatherer%}
 <link rel="stylesheet"
 href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
 integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
@@ -88,13 +88,14 @@ crossorigin="anonymous"></script>
 				{% endif %}
 				Alle</a>
 				{% for tag in tags %}
-				<a href="{% url "videos" %}{{tag.name}}" 
-				{% if tag.name == current_tag %}
+				{% localize_tag_slug tag LANGUAGE_CODE as tag_slug %}
+				<a href="{% url "videos" %}{{ tag_slug }}" 
+				{% if tag_slug == current_tag %}
 						class="badge badge-warning">
 				{% else %}
 						class="badge badge-secondary">
 				{% endif %}
-				{{ tag.name }}
+				{% localize_tag_name tag LANGUAGE_CODE %}
 				</a>
 				{% endfor %}
 			</div>

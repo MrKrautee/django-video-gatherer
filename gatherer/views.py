@@ -42,7 +42,7 @@ class VideoList(ListView):
             order_by = self.request.GET.get('order_by', order_by)
         if 'tag' in self.kwargs.keys():
             tag = self.kwargs['tag']
-            qs = Video.objects.filter(tags__name=tag)
+            qs = Video.objects.filter(tags__tagcontent__slug=tag)
         else:
             qs = Video.objects.all()
         qs = qs.filter(language__in=self._video_lang_filter())

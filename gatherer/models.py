@@ -7,24 +7,58 @@ from django.db import models
 from django.utils import dateparse
 from django.db import transaction
 from django.urls import reverse
+from django.conf import settings
 
 from gatherer.tools import youtube_finder, EventType, VideoDuration
 from gatherer.tools import facebook_finder
 
 logger = logging.getLogger("django")
 
-LANGUAGE_CHOICES = [
-        ('de', 'Deutsch'),
-        ('en', 'english')
-]
-
+LANGUAGE_CHOICES = settings.LANGUAGES
 
 class Tag(models.Model):
+
+    def name(self, lang_code):
+        try:
+            tag_content = self.tagcontent_set.get(language=lang_code)
+        except: # TODO: catch specific Exception
+            tag_content = self.tagcontent_set.get(
+                                        language=settings.LANGUAGE_CODE
+                        )
+        return tag_content.name
+
+    def slug(self, lang_code):
+        try:
+            tag_content = self.tagcontent_set.get(language=lang_code)
+        except: # TODO: catch specific Exception
+            tag_content = self.tagcontent_set.get(
+                                        language=settings.LANGUAGE_CODE
+                        )
+        return tag_content.slug
+
+    def description(self, lang_code):
+        return 'not implemented'
+
+    def __str__(self):
+        tag_content = self.tagcontent_set.filter(
+                            language=settings.LANGUAGE_CODE
+                      )[0]
+        return str(tag_content)
+
+
+class TagContent(models.Model):
+    language = models.CharField(max_length=3, choices=LANGUAGE_CHOICES, blank=False)
     name = models.CharField(max_length=255, unique=True, verbose_name="tag name")
     description = models.TextField(blank=True)
+    slug = models.SlugField()
+
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
 
     def __str__(self):
         return "%s" % self.name
+
+    class Meta:
+        unique_together = ('tag', 'language')
 
 
 class YtChannel(models.Model):
@@ -204,6 +238,7 @@ class YtSearchPattern(SearchPattern):
 
     def __str__(self):
         return f"{self.channel}, q={self.search_query}, {self.duration}"
+
 
 
 class FbSite(models.Model):
