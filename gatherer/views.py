@@ -31,7 +31,7 @@ class VideoList(ListView):
         session_vlang = self.request.session['video_lang']
         if session_vlang and session_vlang != 'all':
             language = [self.request.session['video_lang'],]
-        else:
+        else: # all: show videos in all languages
             language = [code for code,_ in settings.LANGUAGES]
         return language
 

@@ -93,9 +93,26 @@ class FacebookVideoFinder:
 
         }
     def search(self, site_name_slug, search_query: str):
+        # (?s)^(?=.*kriya|.*übung)(?=.*kaur)((?!interview|3ho).)*$
+        # build regex for search
+        if search_query:
+            not_include: list = re.findall(r"(-\w+)", search_query)
+            for w in not_include:
+                search_query = search_query.replace(w, '')
+            not_include = [ w.replace("-", "")
+                                  for w in not_include]
+            or_include: list = [w.strip() for w in search_query.split("|")]
+            or_regex, not_regex = "", ".*"
+            if or_include:
+                or_regex = "(?=.*%s)" % "|.*".join(or_include)
+            if not_include:
+                not_regex = "((?!%s).)*" % "|".join(not_include)
+            search_regex = f"(?s)^{or_regex}{not_regex}$"
+        else:
+            search_regex = search_query
         videos = self.get_videos(site_name_slug)
         result_videos = [self._convert(v) for v in videos
-                         if re.search(search_query, v['text'], re.IGNORECASE)]
+                         if re.search(search_regex, v['text'], re.IGNORECASE)]
         return result_videos
 
 if __name__ == "__main__":

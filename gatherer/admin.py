@@ -28,15 +28,20 @@ from gatherer.tools import facebook_finder
 logger = logging.getLogger("django")
 
 # @TODO: only working for simple search terms.
-def highlight_text(text:str, match:str):
-    pattern = re.compile(match, re.IGNORECASE)
-    result = pattern.search(text)
-    if result:
-        hi_match = f'<span style="background-color: #FFFF00">{result.group(0)}</span>'
-        new_text = pattern.sub(hi_match, text)
-        return format_html(new_text)
-    else:
-        return text
+def highlight_text(text:str, search_query:str):
+    not_include: list = re.findall(r"(-\w+)", search_query)
+    for w in not_include:
+        search_query = search_query.replace(w, '')
+    not_include = [ w.replace("-", "")
+                          for w in not_include]
+    or_include: list = [w.strip() for w in search_query.split("|")]
+    for word in or_include:
+        pattern = re.compile(word, re.IGNORECASE)
+        result = pattern.search(text)
+        if result:
+            hi_match = f'<span style="background-color: #FFFF00">{result.group(0)}</span>'
+            text = pattern.sub(hi_match, text)
+    return format_html(text)
 
 def highlight_search(videos: list, search_query:str):
     for v in videos:
