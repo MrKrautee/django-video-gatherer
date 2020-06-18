@@ -92,7 +92,7 @@ class FacebookVideoFinder:
             'duration': int(video['duration'])
 
         }
-    def search(self, site_name_slug, search_query: str):
+    def search(self, site_name_slug, search_query: str, duration='any'):
         # (?s)^(?=.*kriya|.*übung)(?=.*kaur)((?!interview|3ho).)*$
         # build regex for search
         if search_query:
@@ -110,9 +110,16 @@ class FacebookVideoFinder:
             search_regex = f"(?s)^{or_regex}{not_regex}$"
         else:
             search_regex = search_query
+        mins = {
+                'any': (0, 1000000),
+                'short': (0, 4),
+                'medium': (4, 20),
+                'long': (20, 1000000)
+        }
         videos = self.get_videos(site_name_slug)
         result_videos = [self._convert(v) for v in videos
-                         if re.search(search_regex, v['text'], re.IGNORECASE)]
+                         if re.search(search_regex, v['text'], re.IGNORECASE) \
+                            and mins[duration][0] <= v['duration'] < mins[duration][1]]
         return result_videos
 
 if __name__ == "__main__":

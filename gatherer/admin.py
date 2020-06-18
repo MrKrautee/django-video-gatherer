@@ -27,7 +27,6 @@ from gatherer.tools import facebook_finder
 
 logger = logging.getLogger("django")
 
-# @TODO: only working for simple search terms.
 def highlight_text(text:str, search_query:str):
     not_include: list = re.findall(r"(-\w+)", search_query)
     for w in not_include:
@@ -240,7 +239,7 @@ class FbSearchPatternAdmin(SearchPatternAdmin):
     list_display = ('site', 'language', 'search_query', 'tag_list')
     fieldsets = (
         ("Search", {
-            'fields': ('site', 'search_query')
+            'fields': ('site', 'duration', 'search_query')
         }),
         ("add to Videos", {
             'fields': ('tags','language')
@@ -265,7 +264,7 @@ class FbSearchPatternAdmin(SearchPatternAdmin):
             site_pk = params['site_pk']
             slug = FbSite.objects.get(id=site_pk).slug
             search_query = params['search_query']
-            videos = facebook_finder.search(slug, search_query)
+            videos = facebook_finder.search(slug, search_query, duration=params['duration'])
             videos = highlight_search(videos, search_query)
             context = dict(
                     videos=videos,

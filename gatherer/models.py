@@ -16,6 +16,12 @@ logger = logging.getLogger("django")
 
 LANGUAGE_CHOICES = settings.LANGUAGES
 
+DURATION_CHOICES = [
+        (VideoDuration.ANY.value, 'any'),
+        (VideoDuration.LONG.value, 'longer than 20 mins'),
+        (VideoDuration.MEDIUM.value, 'between 4 and 20 mins'),
+        (VideoDuration.SHORT.value, 'less than 4 mins')
+]
 class Tag(models.Model):
 
     def name(self, lang_code):
@@ -175,12 +181,6 @@ class YtSearchPattern(SearchPattern):
             * not_in_title: string that is not contained in title
 
     """
-    DURATION_CHOICES = [
-            (VideoDuration.ANY.value, 'any'),
-            (VideoDuration.LONG.value, 'longer than 20 mins'),
-            (VideoDuration.MEDIUM.value, 'between 4 and 20 mins'),
-            (VideoDuration.SHORT.value, 'less than 4 mins')
-    ]
     duration = models.CharField(max_length=6, choices=DURATION_CHOICES,
             default='long')
     event_type = models.CharField(max_length=9, choices=YoutubeVideo.EVENT_TYPE_CHOICES,
@@ -280,6 +280,8 @@ class FacebookVideo(Video):
 
 class FbSearchPattern(SearchPattern):
     site = models.ForeignKey(FbSite, on_delete=models.CASCADE)
+    duration = models.CharField(max_length=6, choices=DURATION_CHOICES,
+            default='long')
 
     def save_videos(self):
         logger.debug("save facebook videos")

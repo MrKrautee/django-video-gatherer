@@ -169,9 +169,11 @@ crossorigin="anonymous"></script>
                     <div class="video_meta col">
 			    <small class="mute">{{ video.published_at|date:"d.m.Y" }}</small>
 						{% for tag in video.tags.all %}
-						<a href="{% url "videos"%}{{tag.name}}"
+						{% localize_tag_slug tag LANGUAGE_CODE as tag_slug %}
+						{% localize_tag_name tag LANGUAGE_CODE as tag_name %}
+						<a href="{% url "videos"%}{{tag_slug}}"
 								class="badge badge-light">
-								{{tag.name}}
+								{{tag_name}}
 						</a>
 						{% endfor %}
                         {{ video.live_broadcast }}
