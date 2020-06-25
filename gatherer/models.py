@@ -133,6 +133,9 @@ class Video(models.Model):
     def link(self):
         return self.child.link
 
+    class Meta:
+        ordering = ['-published_at', ]
+
 
 class YoutubeVideo(Video):
     EVENT_TYPE_CHOICES = [
@@ -282,6 +285,14 @@ class FbSearchPattern(SearchPattern):
     site = models.ForeignKey(FbSite, on_delete=models.CASCADE)
     duration = models.CharField(max_length=6, choices=DURATION_CHOICES,
             default='long')
+
+    video_model = FacebookVideo
+
+    def update_videos(self):
+        videos = self.video_model.objects.filter(search_pattern=self)
+        recent_video = videos.order_by("-published_at")[0]
+        last_published = recent_video.published_at
+        pass
 
     def save_videos(self):
         logger.debug("save facebook videos")

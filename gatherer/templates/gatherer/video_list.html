@@ -1,19 +1,7 @@
+{% extends "gatherer/base.html" %}
 {% load i18n gatherer%}
-<link rel="stylesheet"
-href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
-integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
-crossorigin="anonymous">
-<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
-	integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
-	crossorigin="anonymous"></script>
-<script
-	src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
-integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
-crossorigin="anonymous"></script>
-<script
-	src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
-integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
-crossorigin="anonymous"></script>
+
+{% block "js" %}
 <script>
 	$( document ).ready(function() {
 		$('#filter').change(function(){
@@ -35,6 +23,8 @@ crossorigin="anonymous"></script>
 		});
 	});
 </script>
+{% endblock %}
+{% block "css" %}
 <style>
 .duration {
 		position: absolute;
@@ -50,148 +40,133 @@ crossorigin="anonymous"></script>
 		font-size: smaller;
 		font-family: sans-serif;
 		font-weight: bold;
+}
 
+.video-row {
 
-};
+	margin-bottom: 40px;
+}
+
 </style>
-<div class="container">
-	<div class="row">
-		<div class="col-md-auto">
-			<form action="{% url 'set_language' %}" method="post" id="lang-form">{% csrf_token %}
-				<input name="next" type="hidden" value="{{ redirect_to }}">
-				<select name="language" id="language" class="custom-select custom-select-sm">
-					{% get_current_language as LANGUAGE_CODE %}
-					{% get_available_languages as LANGUAGES %}
-					{% get_language_info_list for LANGUAGES as languages %}
-					{% for language in languages %}
-						<option value="{{ language.code }}"{% if language.code == LANGUAGE_CODE %} selected{% endif %}>
-							{{ language.name_local }} ({{ language.code }})
-						</option>
-					{% endfor %}
-				</select>
-			</form>
+{% endblock %}
 
-		</div>
-		<div class="col-md-auto"></div>
-		<div class="col"></div>
-</div>
+	{% block "content" %}
 	
-<h1> {% trans "Online Yogastunden" %} </h1>
-	<div class="row">
-			<div class="col-md-auto">{% trans "nach Tags" %}</div>
-			<div class="col-md-auto">
-				<a href="{% url "videos" %}" 
-				{% if current_tag == "" %}
-						class="badge badge-warning">
-				{% else %}
-						class="badge badge-dark">
-				{% endif %}
-				{% trans "Alle" %}</a>
-				{% for tag in tags %}
-				{% localize_tag_slug tag LANGUAGE_CODE as tag_slug %}
-				<a href="{% url "videos" %}{{ tag_slug }}" 
-				{% if tag_slug == current_tag %}
-						class="badge badge-warning">
-				{% else %}
-						class="badge badge-secondary">
-				{% endif %}
-				{% localize_tag_name tag LANGUAGE_CODE %}
-				</a>
-				{% endfor %}
-			</div>
-	</div>
-	<div class="row">
-			<div class="col-md-auto">{% trans "sortieren nach" %}</div>
-			<div class="col-md-auto">
-				<select class="custom-select custom-select-sm" id="filter">
-						{% for param, name in order_options.items %}
-						<option value="{{param}}"
-							{% if param == order_by %}selected{%endif%}>
-						{{ name }}
-						</option>
-						{% endfor %}
-				</select>
-
-			</div>
-			<div class="col"></div>
-	</div>
-	<div class="row">
-		<div class="col-md-auto">{% trans "Video Sprache" %}</div>
-		<div class="col-md-auto">
-			<!-- @TODO: form and view-->
-			<select name="video_lang" id="video_lang" class="custom-select custom-select-sm">
-				{% get_current_language as LANGUAGE_CODE %}
-				{% get_available_languages as LANGUAGES %}
-				{% get_language_info_list for LANGUAGES as languages %}
-				<option value="all" {% if "all" == video_lang %} selected{% endif %}>{% trans "alle" %}</option>
-				{% for language in languages %}
-					<option value="{{ language.code }}"{% if language.code == video_lang %} selected{% endif %}>
-						{{ language.name_local }} ({{ language.code }})
-					</option>
-				{% endfor %}
-			</select>
-
-		</div>
-		<div class="col"></div>
-</div>
 	{{ object_list|length }} Video{{object_list|length|pluralize}} gefunden.
-</div>
-<br>
-<div class="container">
-{% for video in object_list %}
-        <div class="row" id="{{ video.video_id }}">
-            <div class="col-3">
-					<div style="position:relative;"><img
-						class="img-fluid img-thumbnail"
-						src="{{ video.image}}"
-						style="object-fit: scale-down; width: 255px; height: 147px;">
-						<!-- object-fit: cover / fill-->
-							<span class="duration">{{video.duration}}</span>
-					</div>
 
-            </div>
-            <div class="col-9">
-                <div class="row">
-                    <div class="video_headline col">
-                        <h5>
-							<a href="{{ video.link}}" target="_blank">
-								{{video.title|truncatewords:13}}
-							</a>
-						</h5>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="video_description col">
-                        {{ video.description|truncatewords:75 }}
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="video_meta col">
-			    <small class="mute">{{ video.published_at|date:"d.m.Y" }}</small>
-						{% for tag in video.tags.all %}
-						{% localize_tag_slug tag LANGUAGE_CODE as tag_slug %}
-						{% localize_tag_name tag LANGUAGE_CODE as tag_name %}
-						<a href="{% url "videos"%}{{tag_slug}}"
-								class="badge badge-light">
-								{{tag_name}}
-						</a>
-						{% endfor %}
-                        {{ video.live_broadcast }}
-                        
-                        {% if video.facebookvideo %}
-                        <span class="badge badge-primary">facebook {% else %}
-                        <span class="badge badge-danger">youtube {% endif %}</span>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="video_tags col">
-			    <small class="mute">
-                        </small>
-						<br />
-						<br />
-                    </div>
-                </div>
-            </div>
-        </div>
+<br>
+
+{% for video in object_list %}
+
+<div class="card mb-3" >
+	<div class="card-header">
+		<a href="{{ video.link}}" target="_blank" title="{{video.title}}">
+			{{video.title|truncatewords:9}}
+		</a>
+	</div>
+	<div class="row no-gutters">
+	  <div class="col-md-4">
+		<div style="position:relative;"><img
+			
+			src="{{ video.image}}"
+			style="object-fit: scale-down; width: 255px; height: 147px; padding: 5px;">
+			<!-- object-fit: cover / fill-->
+				<span class="duration">{{video.duration}}</span>
+	  </div>
+	  </div>
+	  <div class="col-md-8">
+		<div class="card-body">
+		  <p class="card-text">{{ video.description|truncatewords:25 }}</p>
+		  
+		</div>
+		
+	  </div>
+	  
+	</div>
+	<div class="card-footer"><small class="mute">{{ video.published_at|date:"d.m.Y" }}</small>
+		• {{video.publisher}} •
+		{% for tag in video.tags.all %}
+		{% localize_tag_slug tag LANGUAGE_CODE as tag_slug %}
+		{% localize_tag_name tag LANGUAGE_CODE as tag_name %}
+		<a href="{% url "videos"%}{{tag_slug}}"
+				class="badge badge-light">
+				{{tag_name}}
+		</a>
+		{% endfor %}
+		{{ video.live_broadcast }}
+		
+		{% if video.facebookvideo %}
+		<span class="badge badge-primary">facebook {% else %}
+		<span class="badge badge-danger">youtube {% endif %}</span>
+		
+	</div>
+  </div>
+        
 {% endfor %}
-</div>
+{% endblock %}
+{% block "sidebar" %}
+<!-- Search Widget -->
+	<div class="card my-4">
+		<h5 class="card-header">Search</h5>
+		<div class="card-body">
+			<div class="input-group">
+				<div class="row">
+					<div class="col-md-auto">{% trans "sortieren nach" %}</div>
+					<div class="col-md-auto">
+						<select class="custom-select custom-select-sm" id="filter">
+								{% for param, name in order_options.items %}
+								<option value="{{param}}"
+									{% if param == order_by %}selected{%endif%}>
+								{{ name }}
+								</option>
+								{% endfor %}
+						</select>
+
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-md-auto">{% trans "Video Sprache" %}</div>
+					<div class="col-md-auto">
+						<!-- @TODO: form and view-->
+						<select name="video_lang" id="video_lang" class="custom-select custom-select-sm">
+							{% get_current_language as LANGUAGE_CODE %}
+							{% get_available_languages as LANGUAGES %}
+							{% get_language_info_list for LANGUAGES as languages %}
+							<option value="all" {% if "all" == video_lang %} selected{% endif %}>{% trans "alle" %}</option>
+							{% for language in languages %}
+								<option value="{{ language.code }}"{% if language.code == video_lang %} selected{% endif %}>
+									{{ language.name_local }} ({{ language.code }})
+								</option>
+							{% endfor %}
+						</select>
+
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+  <!-- Side Widget -->
+  <div class="card my-4">
+	<h5 class="card-header">{% trans "nach Tags" %}</h5>
+	<div class="card-body">
+		<a href="{% url "videos" %}" 
+		{% if current_tag == "" %}
+				class="badge badge-warning">
+		{% else %}
+				class="badge badge-dark">
+		{% endif %}
+		{% trans "Alle" %}</a>
+		{% for tag in tags %}
+		{% localize_tag_slug tag LANGUAGE_CODE as tag_slug %}
+		<a href="{% url "videos" %}{{ tag_slug }}" 
+		{% if tag_slug == current_tag %}
+				class="badge badge-warning">
+		{% else %}
+				class="badge badge-secondary">
+		{% endif %}
+		{% localize_tag_name tag LANGUAGE_CODE %}
+		</a>
+		{% endfor %}
+	</div>
+  </div>
+{% endblock %}

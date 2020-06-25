@@ -56,6 +56,7 @@ class FacebookVideoFinder:
         for video in self._scraper.extract_videos(site_name_slug):
             video['duration'] = self._get_duration(video['src'])
             videos.append(video)
+            # @TODO: yield , to have a iterator to check for updates
         return videos
 
 
