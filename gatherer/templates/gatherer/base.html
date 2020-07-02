@@ -58,7 +58,7 @@ jQuery(document).ready(function($){
           </li>
           <li class="nav-item">
             <form action="{% url 'set_language' %}" method="post" id="lang-form">{% csrf_token %}
-              <input name="next" type="hidden" value="{{ redirect_to }}">
+                <input name="next" type="hidden" value="{% url "rest" %}">
               <select name="language" id="language" class="custom-select custom-select-sm">
                 {% get_current_language as LANGUAGE_CODE %}
                 {% get_available_languages as LANGUAGES %}

@@ -2,233 +2,17 @@
 {% load i18n gatherer static%}
 
 {% block "js" %}
-<script src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.js"></script>
-{% verbatim %}
-<script id="video-template" type="text/x-handlebars-template">
-	{{#each results}}
-	<div class="card mb-3" >
-		<div class="card-header">
-			<a href="{{this.link}}" target="_blank" title="{{this.title}}">
-				{{title}}
-			</a>
-		</div>
-		<div class="row no-gutters">
-		  <div class="col-md-4">
-			<div style="position:relative;"><img
-				
-				src="{{this.image}}"
-				style="object-fit: scale-down; width: 255px; height: 147px; padding: 5px;">
-					<span class="duration">{{this.duration}}</span>
-		  </div>
-		  </div>
-		  <div class="col-md-8">
-			<div class="card-body">
-			  <p class="card-text">{{truncwords this.description 25}}</p>
-			  
-			</div>
-			
-		  </div>
-		  
-		</div>
-		<div class="card-footer"><small class="mute">{{this.published_at}}</small>
-			• {{this.publisher}} 
-		</div>
-	</div>
-	{{/each}}
-</script>
-{% endverbatim %}
 <script>
-    Handlebars.registerHelper('truncwords', function(text, length) {
-        words = text.split(" ");
-        new_text = text;
-        if (words.length > length){
-            new_text = "";
-            for (var i = 0; i <= length; i++) {
-               new_text += words[i] + " ";
-            }  
-            new_text = new_text.trim() + "..."          
-        }
-        return new_text;
-    });
-	$( document ).ready(function() {
-		
-		$('#language').change(function(){
-				$(this).parents("form").submit();
-				//window.location="./?order_by="+$(this).val()
-		});
-
-		$('#spinner').css("display", "block");
-
-		// first page loads
-		var videoUrl = location.protocol + '//' + location.host + location.pathname;
-		// page status
-		var state = {
-			prevPage: null,
-			nextPage: null,
-			currPage: window.location.toString(),
-			currBaseURL: videoUrl, // only changed with tags
-			tagId: null,
-			params: {
-				order_by: "{{order_by}}",
-				video_lang: "{{video_lang}}",
-				page: "{{page_nr}}",
-			},
-		}
-		var actions = {
-			getURL: function() {
-				var url = state.currBaseURL + "?" + $.param(state.params);
-				return url;
-			},
-			load: function() {
-				//history.pushState(state, "NA", this.getURL())
-				if(state.tagId != null){
-					hiCurrTag($("#"+state.tagId));
-				};
-				return this.loadVideos(this.getURL());
-			},
-			loadVideos: function (url){
-				$('#spinner').show();
-				//remove old content
-				$("#content-body").html("");
-				return $.get(url, function(data){
-					var source = document.getElementById("video-template").innerHTML;
-					var template = Handlebars.compile(source);
-					var html = template(data);
-					$('#spinner').hide();
-					$("#content-body").html(html);
-					state.nextPage = data.next;
-					state.prevPage = data.previous;
-					//console.log(state.nextPage);
-					$('#result-count').html(data.count)
-					
-					
-				}, "json");
-			},
-			loadNextPage: function(){
-				state.currPage = state.nextPage;
-				$('#spinner').show();
-				return $.get(state.nextPage, function(data){
-					var source = document.getElementById("video-template").innerHTML;
-					var template = Handlebars.compile(source);
-					var html = template(data);
-					state.nextPage = data.next;
-					state.prevPage = data.previous;
-					$('#spinner').hide();
-					$("#content-body").append(html);	
-					//history.pushState(state, "NA", state.currPage)
-				}, "json");
-			},
-			loadPrevPage: function(){
-				//state.currPage = state.nextPage;
-				$('#spinner-top').show();
-				return $.get(state.prevPage, function(data){
-					var source = document.getElementById("video-template").innerHTML;
-					var template = Handlebars.compile(source);
-					var html = template(data);
-					//state.nextPage = data.next;
-					state.prevPage = data.previous;
-					$('#spinner-top').hide();
-					$("#content-body").prepend(html);	
-					//history.pushState(state, "NA", state.currPage)
-				}, "json");
-			},
-		};
-		// infinite sroll
-		var alreadyScrolling = false;
-		$(window).scroll(function(){
-				// get the bottom position
-				var bottom_position = $(document).height() - ($(window).scrollTop() + $(window).height());
-				//console.log(bottom_position);
-				if(bottom_position<=800 && state.nextPage !=null && state.nextPage != state.currBaseURL && alreadyScrolling == false){
-					alreadyScrolling = true;
-					actions.loadNextPage().done(function(){
-						alreadyScrolling = false;
-					});
-				}
-				
-		});
-		// browser: back
-		$(window).on('popstate', function (e) {
-			var stateToLoad = e.originalEvent.state;
-			if (state !== null) {
-				state = stateToLoad;
-				actions.load();
-				history.replaceState(state, "Yoga Videos ", state.currBaseURL);
-			}
-		});		
-		var initLoad = actions.load();
-		// tags
-		function hiCurrTag(tagElement){
-			$("#tags > a").each(function(){
-				$(this).attr("class", "badge badge-secondary");
-			});
-			tagElement.attr("class", "badge badge-warning")
-		};
-		$("#tags > a").each(function(){
-			$(this).click(function(e){
-				state.currBaseURL = $(this).attr('href');
-				state.params.page = 1;
-				state.tagId = $(this).attr('id');
-				history.pushState(state, "Yoga Videos: "+$(this).attr('name'), state.currBaseURL);
-				actions.load();
-				e.preventDefault();
-				hiCurrTag($(this));
-			});
-		});
-		$('#filter').change(function(){
-			if($(this).val() != ""){
-				state.params.order_by = $(this).val();
-				// reset pagination / page data
-				state.params.page = 1;
-				state.prevPage = null;
-				state.currPage = null;
-				state.nextPage = null;
-				actions.load();
-
-			}
-		});
-		$('#video_lang').change(function(){
-			if($(this).val() != ""){
-				//console.log($(this).val());
-				state.params.video_lang = $(this).val();
-				// reset pagination / page data
-				state.params.page = 1;
-				state.prevPage = null;
-				state.currPage = null;
-				state.nextPage = null;
-				// @!TODO: reload tag list
-				actions.load();
-
-			}
-		});
-	{% if current_tag %}
-		state.tagId = "tag-"+"{{current_tag}}";
-	{% endif %}
-	{%if page_nr %} // load specific page
-		//console.log("page");
-		//remove page from url
-		history.replaceState(state, "Yoga Videos ", state.currBaseURL);
-		initLoad.done(function() {
-			if (state.prevPage != null){
-				var prevLink = $('#load-previous');
-				prevLink.attr("href", state.prevPage);
-				prevLink.click(function(e) {
-					actions.loadPrevPage().done(function(){
-						if(state.prevPage == null){
-							prevLink.hide();
-						};	
-					});
-					e.preventDefault();
-				});
-				prevLink.show();
-			};
-		});
-	{% endif %}
-	});
-
-
-
+    // @TODO: use tag json_script
+    var order_by = "{{ order_by }}";
+    var video_lang = "{{video_lang }}";
+    var page_nr = {{ page_nr }};
+    var page_title = "{% trans "Yoga Videos" %}";
+    var tag_id = "tag-{{current_tag}}";
 </script>
+{{ data.previous|json_script:"prev_video_page" }}
+{{ data.next|json_script:"next_video_page" }}
+<script src="{% static 'gatherer/js/videos.js'%}"></script>
 {% endblock %}
 {% block "css" %}
 <style>
@@ -264,32 +48,95 @@
 #load-previous {
 	display: none;
 }
+.video-link {
+    text-decoration: none;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+/*#tags a {
+    margin-left: 4px;
+}*/
 </style>
 
 {% endblock %}
 
-	{% block "content" %}
+{% block "content" %}
 	<div id="content-header">
-		<p><span id="result-count">0</span> {% trans "Videos gefunden." %}</p>
+        <p><span id="result-count">{{data.count}}</span> {% trans "Videos gefunden." %}</p>
 		<a id="load-previous" href="">Load previous videos</a>
 		<img id="spinner-top" class="center" src='{% static "gatherer/graphics/Spinner-1s-200px.svg" %}'/>
 	</div>
-	<div id="content-body">
-		<!-- video list-->
+	<div id="content-body"><!-- video list-->
+		
+{% for video in data.results %}
+
+<div class="card mb-3" >
+	<div class="card-header">
+		<a href="{{ video.link}}" target="_blank" title="{{video.title}}"
+            class="video-link">
+			{{video.title}}
+		</a>
+	</div>
+	<div class="row no-gutters">
+	  <div class="col-md-4">
+		<div style="position:relative;"><img
+			
+			src="{{ video.image}}"
+            class="video-img"
+			style="object-fit: scale-down; width: 246px; height: 138px; padding: 5px;">
+			<!-- object-fit: cover / fill-->
+				<span class="duration">{{video.duration}}</span>
+	  </div>
+	  </div>
+	  <div class="col-md-8">
+		<div class="card-body">
+		  <p class="card-text">
+            <span class="description">
+                {{ video.description }}
+            </span>
+          </p>
+		  
+		</div>
+		
+	  </div>
+	  
+	</div>
+	<div class="card-footer"><small class="mute">
+            <span class="published-at">
+                {{ video.published_at }}
+            </span>
+            • <span class="publisher">{{video.publisher}}</span>
+        </small>
+        {% comment %}
+		{% for tag in video.tags.all %}
+		{% localize_tag_slug tag LANGUAGE_CODE as tag_slug %}
+		{% localize_tag_name tag LANGUAGE_CODE as tag_name %}
+		<a href="{% url "videos"%}{{tag_slug}}"
+				class="badge badge-light">
+				{{tag_name}}
+		</a>
+		{% endfor %}
+		{{ video.live_broadcast }}
+		
+		{% if video.facebookvideo %}
+		<span class="badge badge-primary">facebook {% else %}
+		<span class="badge badge-danger">youtube {% endif %}</span>
+        {% endcomment %}
+		
+	</div>
+  </div>
+        
+{% endfor %}
 	</div>
 	<div id="content-footer">
 		<img id="spinner" class="center" src='{% static "gatherer/graphics/Spinner-1s-200px.svg" %}'/>
 	</div>
-	
-	
-
-<br>
-
 {% endblock %}
 {% block "sidebar" %}
+<p></p>
 <!-- Search Widget -->
 	<div class="card my-4">
-		<h5 class="card-header">Search</h5>
+		<h5 class="card-header">sortieren:</h5>
 		<div class="card-body">
 			<div class="input-group">
 				<div class="row">
@@ -335,7 +182,7 @@
 		{% if current_tag == "all"%}
 				class="badge badge-warning">
 		{% else %}
-				class="badge badge-dark">
+				class="badge badge-secondary">
 		{% endif %}
 		{% trans "Alle" %}</a>
 		{% for tag in tags %}
