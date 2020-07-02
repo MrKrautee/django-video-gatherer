@@ -1,4 +1,7 @@
 from rest_framework import serializers
+from django.utils.timesince import timesince
+from django.utils.translation import gettext_lazy as _
+from django.utils.translation import ngettext_lazy 
 from gatherer.models import Video, Tag, TagContent, YtChannel, FbSite
 
 
@@ -70,12 +73,21 @@ class FbSiteSerializer(serializers.ModelSerializer):
         fields = ['slug', 'url']
 
 
+TIME_STRINGS = {
+    'year': ngettext_lazy('%d year', '%d years'),
+    'month': ngettext_lazy('%d month', '%d months'),
+    'week': ngettext_lazy('%d week', '%d weeks'),
+    'day': ngettext_lazy('%d day', '%d days'),
+    'hour': ngettext_lazy('%d hour', '%d hours'),
+    'minute': ngettext_lazy('%d minute', '%d minutes'),
+}
 class VideoSerializer(serializers.ModelSerializer):
 
     publisher = serializers.StringRelatedField(many=False)
     tags = TagSerializer(many=True, read_only=True)
     title = serializers.SerializerMethodField()
     description = serializers.SerializerMethodField()
+    published_at = serializers.SerializerMethodField()
     # ? child, publisher, link
 
     class Meta:
@@ -88,4 +100,8 @@ class VideoSerializer(serializers.ModelSerializer):
         return truncate(obj.title, 85)
 
     def get_description(self, obj):
-        return truncate(obj.description, 306)
+        return truncate(obj.description, 240)
+
+    def get_published_at(self, obj):
+        return _("%s ago") % timesince(obj.published_at,
+                                       time_strings=TIME_STRINGS)

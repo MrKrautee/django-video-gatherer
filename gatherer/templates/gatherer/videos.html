@@ -48,10 +48,33 @@
 #load-previous {
 	display: none;
 }
-.video-link {
+.headline {
     text-decoration: none;
     font-size: 1.1rem;
     font-weight: 500;
+    margin-bottom: -0.3rem;
+}
+.meta {
+    font-size: 0.9rem;
+    font-weight: 550;
+}
+.video-row {
+    margin-bottom: 20px;
+}
+.video-img {
+    /*padding: .25rem;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: .25rem;*/
+    object-fit: scale-down;
+    width: 246px;
+    height: 138px;
+    padding: 5px;
+}
+.description {
+    padding-top: 6px;
+    line-height: 16px;
+    font-size: 0.9rem;
 }
 /*#tags a {
     margin-left: 4px;
@@ -69,62 +92,37 @@
 	<div id="content-body"><!-- video list-->
 		
 {% for video in data.results %}
+        <div class="row video-row">
+            <div class="" style="width: 246px; padding-left: 15px;">
+                <div style="position:relative;">
+                    <img src="{{ video.image}}" class="video-img img-thumbnail"
+                    style="">
+                    <!-- object-fit: cover / fill-->
+                        <span class="duration">{{video.duration}}</span>
+                </div>
+            </div>
+            <div class="col-lg col-md-12 col-sm-12">
+                    <h3 class="headline">
+                        <a href="{{ video.link}}" target="_blank" title="{{video.title}}"
+                            class="video-link">
+                            {{video.title}}
+                        </a>
+                    </h3>
+                    <span class="meta text-muted">
+                        <span class="publisher">
+                            {{video.publisher}}
+                        </span>
+                        •
+                        <span class="published-at">
+                            {{ video.published_at }}
+                        </span>
+                    </span>
+                    <p class="description">
+                        {{ video.description }}
+                    </p>
+            </div>
+        </div>
 
-<div class="card mb-3" >
-	<div class="card-header">
-		<a href="{{ video.link}}" target="_blank" title="{{video.title}}"
-            class="video-link">
-			{{video.title}}
-		</a>
-	</div>
-	<div class="row no-gutters">
-	  <div class="col-md-4">
-		<div style="position:relative;"><img
-			
-			src="{{ video.image}}"
-            class="video-img"
-			style="object-fit: scale-down; width: 246px; height: 138px; padding: 5px;">
-			<!-- object-fit: cover / fill-->
-				<span class="duration">{{video.duration}}</span>
-	  </div>
-	  </div>
-	  <div class="col-md-8">
-		<div class="card-body">
-		  <p class="card-text">
-            <span class="description">
-                {{ video.description }}
-            </span>
-          </p>
-		  
-		</div>
-		
-	  </div>
-	  
-	</div>
-	<div class="card-footer"><small class="mute">
-            <span class="published-at">
-                {{ video.published_at }}
-            </span>
-            • <span class="publisher">{{video.publisher}}</span>
-        </small>
-        {% comment %}
-		{% for tag in video.tags.all %}
-		{% localize_tag_slug tag LANGUAGE_CODE as tag_slug %}
-		{% localize_tag_name tag LANGUAGE_CODE as tag_name %}
-		<a href="{% url "videos"%}{{tag_slug}}"
-				class="badge badge-light">
-				{{tag_name}}
-		</a>
-		{% endfor %}
-		{{ video.live_broadcast }}
-		
-		{% if video.facebookvideo %}
-		<span class="badge badge-primary">facebook {% else %}
-		<span class="badge badge-danger">youtube {% endif %}</span>
-        {% endcomment %}
-		
-	</div>
-  </div>
         
 {% endfor %}
 	</div>
