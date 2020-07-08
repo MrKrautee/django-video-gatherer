@@ -71,7 +71,10 @@
             // publisher
             var videoPublisher = newVideoDiv.find(".publisher").first();
             videoPublisher.html(video.publisher);
-            // ? type + tags
+            // type
+            var videoType = newVideoDiv.find(".type").first();
+            videoType.html(video.type);
+            // ? tags
             // insert video
             videoListHtml.push(newVideoDiv);
         });

@@ -1,0 +1,157 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-07-02 10:59+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: gatherer/admin.py:53
+msgid "video type"
+msgstr ""
+
+#: gatherer/admin.py:98
+msgid "link"
+msgstr ""
+
+#: gatherer/admin.py:102
+msgid "image"
+msgstr ""
+
+#: gatherer/admin.py:129
+msgid "Add Tags to Video"
+msgstr ""
+
+#: gatherer/admin.py:140
+#, python-format
+msgid "Successfully add tags (%(tags)s) to %(count)d %(items)s."
+msgstr ""
+
+#: gatherer/serializers.py:77
+#, python-format
+msgid "%d year"
+msgid_plural "%d years"
+msgstr[0] "%d Jahr"
+msgstr[1] "%d Jahren"
+
+#: gatherer/serializers.py:78
+#, python-format
+msgid "%d month"
+msgid_plural "%d months"
+msgstr[0] "%d Monat"
+msgstr[1] "%d Monaten"
+
+#: gatherer/serializers.py:79
+#, python-format
+msgid "%d week"
+msgid_plural "%d weeks"
+msgstr[0] "%d Woche"
+msgstr[1] "%d Wochen"
+
+#: gatherer/serializers.py:80
+#, python-format
+msgid "%d day"
+msgid_plural "%d days"
+msgstr[0] "%d Tag"
+msgstr[1] "%d Tagen"
+
+#: gatherer/serializers.py:81
+#, python-format
+msgid "%d hour"
+msgid_plural "%d hours"
+msgstr[0] "%d Stunde"
+msgstr[1] "%d Stunden"
+
+#: gatherer/serializers.py:82
+#, python-format
+msgid "%d minute"
+msgid_plural "%d minutes"
+msgstr[0] "%d Minute"
+msgstr[1] "%d Minuten"
+
+#: gatherer/serializers.py:106
+#, python-format
+msgid "%s ago"
+msgstr "vor %s"
+
+#: gatherer/templates/admin/gatherer/video/action_add_tags.html:15
+msgid "Home"
+msgstr ""
+
+#: gatherer/templates/admin/gatherer/video/action_add_tags.html:18
+msgid "Delete multiple objects"
+msgstr ""
+
+#: gatherer/templates/admin/gatherer/video/action_add_tags.html:36
+msgid "Yes, I’m sure"
+msgstr ""
+
+#: gatherer/templates/admin/gatherer/video/action_add_tags.html:37
+msgid "No, take me back"
+msgstr ""
+
+#: gatherer/templates/admin/gatherer/video/change_list_object_tools.html:8
+#, python-format
+msgid "Add %(name)s"
+msgstr ""
+
+#: gatherer/templates/gatherer/base.html:86
+msgid "Online Yogastunden"
+msgstr "Online Yogastunden DDD"
+
+#: gatherer/templates/gatherer/base.html:87
+msgid "übe wann und wo du willst"
+msgstr ""
+
+#: gatherer/templates/gatherer/video_list.html:114
+#: gatherer/templates/gatherer/videos.html:141
+msgid "sortieren nach"
+msgstr ""
+
+#: gatherer/templates/gatherer/video_list.html:128
+#: gatherer/templates/gatherer/videos.html:155
+msgid "Video Sprache"
+msgstr ""
+
+#: gatherer/templates/gatherer/video_list.html:135
+#: gatherer/templates/gatherer/videos.html:162
+msgid "alle"
+msgstr ""
+
+#: gatherer/templates/gatherer/video_list.html:150
+#: gatherer/templates/gatherer/videos.html:177
+msgid "nach Tags"
+msgstr ""
+
+#: gatherer/templates/gatherer/video_list.html:158
+#: gatherer/templates/gatherer/videos.html:185
+msgid "Alle"
+msgstr ""
+
+#: gatherer/templates/gatherer/videos.html:10
+msgid "Yoga Videos"
+msgstr ""
+
+#: gatherer/templates/gatherer/videos.html:88
+msgid "Videos gefunden."
+msgstr ""
+
+#: video_provider/settings.py:112
+msgid "German"
+msgstr ""
+
+#: video_provider/settings.py:113
+msgid "English"
+msgstr ""

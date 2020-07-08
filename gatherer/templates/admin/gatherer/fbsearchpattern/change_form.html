@@ -1,1 +1,137 @@
-{% include "admin/gatherer/searchpattern_change_form.html" %}
+{% extends "admin/change_form.html" %} {% load i18n admin_urls static admin_modify %}
+{% block extrastyle %}
+<link rel="stylesheet"
+href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+crossorigin="anonymous">
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/base.css" %}">{# override bootstrap #}
+{{ block.super }}
+{% endblock %}
+{% block extrahead %}
+{{ block.super }}
+<script type = "text/javascript">
+    (function($){
+        var videoTemplate = function(data){
+
+            var videoListHtml = []
+            data.forEach(function(video){
+                var videoJig = $("#video-jig").clone();
+                videoJig.show();
+                var img = videoJig.find(".img-thumbnail").first();
+                img.attr("src", video.image_url);
+                var link = videoJig.find(".video-link").first();
+                link.attr("href", video.link);
+                link.html(video.description.substr(0, 20)); // @TODO
+                var description = videoJig.find(".video-description");
+                description.html(video.description)
+                var duration = videoJig.find(".video-duration");
+                duration.html(video.duration)
+                videoListHtml.push(videoJig);
+            });
+            return videoListHtml;
+
+        };
+        var scrapeStatus = {
+            scrapeId: null,
+            finishedIds: null,
+            idsCount: null,
+            detailsCount: null,
+
+        };
+        var updateStatus = function(data){
+            scrapeStatus.scrapeId = data.scrape_id;
+            scrapeStatus.finishedIds = data.finished_ids;
+            scrapeStatus.idsCount = data.ids_count;
+            scrapeStatus.datailsCount = data.details_count;
+            var statusText = "searching for videos (found "+data.ids_count+")";
+            if(data.finished_ids == true){
+                $("#spinner-data").show();
+                statusText = "found "+data.ids_count+" videos." +
+                             "<br> fetching video details (fetched " +
+                             data.details_count + ")";
+            }
+            $("#status-text").html(statusText);
+            $("#status-text").append("<br>"+JSON.stringify(scrapeStatus));
+            // $("#status-text").show();
+        };
+        var updateVideos = function(){
+            if(scrapeStatus.scrapeId != null){
+                var base_url = "{% url opts|admin_urlname:'find' %}";
+                var params = {
+                    site_pk:$("#id_site").val(),
+                    channel_pk:$("#id_channel").val(),
+                    search_query:$("#id_search_query").val(),
+                    duration:$("#id_duration").val(),
+                    event_type:$("#id_event_type").val(),
+                    scrape_id: scrapeStatus.scrapeId,
+                };
+                var url = base_url+"?"+$.param(params);
+                $.get(url, function(data){
+                    var currentVideoLen = $("#video-list").children().length
+                    // only add new videos
+                    var videosToAdd = data.data.slice(currentVideoLen);
+                    var videos = videoTemplate(videosToAdd);
+                    $("#video-list").append(videos);
+                    updateStatus(data);
+                    setTimeout(updateVideos, 3000);
+                }, "json")
+                
+            }else{
+                $('#status').hide();
+                $("#spinner-data").hide();
+            };
+        };
+        $( document ).ready(function() {
+            //fix delte button (wrong height cause of bootstrap)
+            $('a.deletelink').attr('style', 'height:35px;');
+            $('#id_search_query').after(
+                '<button type="button" class="button" id="search">Preview</button>'
+            );
+            $("#search").click(function(){
+                var base_url = "{% url opts|admin_urlname:'find' %}";
+                var params = {
+                    site_pk:$("#id_site").val(),
+                    channel_pk:$("#id_channel").val(),
+                    search_query:$("#id_search_query").val(),
+                    duration:$("#id_duration").val(),
+                    event_type:$("#id_event_type").val(),
+                };
+                var url = base_url+"?"+$.param(params);
+                $("#status").show();
+                //$("#spinner-data").show();
+                $.get(url, function(data){
+                    var videos = videoTemplate(data.data);
+                    $("#video-list").html(videos);
+                    updateStatus(data);
+                }, "json").done(function(){
+                    updateVideos();
+                });
+                
+            });
+        });
+    }(django.jQuery));
+</script>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+{% include "admin/gatherer/fbsearchpattern/video_jig.html" %}
+<div class="container">
+    <div id="status" class="row" style="display:none;">
+        <div class="col-1">
+            <img src="{% static "gatherer/graphics/Spinner-1s-200px.svg" %}" 
+             id="spinner-status"
+             style="width: 50px; float: left;">
+        </div>
+        <div id="status-text" class="col">
+            <!-- status -->
+        </div>
+    </div>
+    <div id="video-list">
+        <!-- video list -->
+    </div>
+    <img src="{% static "gatherer/graphics/Spinner-1s-200px.svg" %}" 
+         id="spinner-data"
+         style="display: none;">
+</div>
+{% endblock %}

@@ -83,11 +83,12 @@ TIME_STRINGS = {
 }
 class VideoSerializer(serializers.ModelSerializer):
 
-    publisher = serializers.StringRelatedField(many=False)
+    publisher = serializers.SerializerMethodField()
     tags = TagSerializer(many=True, read_only=True)
     title = serializers.SerializerMethodField()
     description = serializers.SerializerMethodField()
     published_at = serializers.SerializerMethodField()
+    type = serializers.SerializerMethodField()
     # ? child, publisher, link
 
     class Meta:
@@ -102,6 +103,13 @@ class VideoSerializer(serializers.ModelSerializer):
     def get_description(self, obj):
         return truncate(obj.description, 240)
 
+    def get_publisher(self, obj):
+        return truncate(str(obj.publisher), 35)
+
     def get_published_at(self, obj):
         return _("%s ago") % timesince(obj.published_at,
                                        time_strings=TIME_STRINGS)
+
+    def get_type(self, obj):
+        type = obj.type.replace("video", "")
+        return type.capitalize()

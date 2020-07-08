@@ -84,7 +84,7 @@ class FacebookVideoFinder:
 
     def _convert(self, video) -> dict:
         return {
-            'video_id': video['id'],
+            'video_id': video['id'], # video_id
             'image_url': video['thumbnail'],
             'url': video['url'],
             'title': video['text'][:110],
@@ -93,6 +93,7 @@ class FacebookVideoFinder:
             'duration': int(video['duration'])
 
         }
+
     def search(self, site_name_slug, search_query: str, duration='any'):
         # (?s)^(?=.*kriya|.*übung)(?=.*kaur)((?!interview|3ho).)*$
         # build regex for search

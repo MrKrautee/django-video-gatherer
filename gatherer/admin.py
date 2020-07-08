@@ -14,6 +14,8 @@ from django.forms import modelformset_factory
 from django.contrib.sessions.models import Session
 from django.conf import settings
 
+from facebook_video_scraper.views import VideoDetailsListView
+
 from gatherer.models import Video
 from gatherer.models import Tag
 from gatherer.models import TagContent
@@ -27,7 +29,8 @@ from gatherer.tools import facebook_finder
 
 logger = logging.getLogger("django")
 
-def highlight_text(text:str, search_query:str):
+
+def highlight_text(text: str, search_query: str):
     not_include: list = re.findall(r"(-\w+)", search_query)
     for w in not_include:
         search_query = search_query.replace(w, '')
@@ -252,13 +255,25 @@ class FbSearchPatternAdmin(SearchPatternAdmin):
         opts = self.opts
         my_urls = [
                 path('find/',
-                    self.admin_site.admin_view(self.find),
-                    name="%s_%s_find"%(opts.app_label, opts.model_name)
+                     self.admin_site.admin_view(self.find),
+                     name="%s_%s_find"%(opts.app_label, opts.model_name)
+                ),
+                path('preview/',
+                     VideoDetailsListView.as_view({'get': 'list'}),
+                     name="%s_%s_preview"%(opts.app_label, opts.model_name)
                 ),
         ]
         return my_urls + urls
 
     def find(self, request):
+        params = request.GET
+        site_pk = params.get('site_pk')
+        slug = FbSite.objects.get(id=site_pk).slug
+        rest_request_GET = request.GET.copy()
+        rest_request_GET['site_slug'] = slug
+        del(rest_request_GET['site_pk'])
+        request.GET = rest_request_GET
+        return VideoDetailsListView.as_view({'get': 'list'})(request)
         if request.method == "GET":
             params = request.GET
             site_pk = params['site_pk']

@@ -22,12 +22,14 @@ DURATION_CHOICES = [
         (VideoDuration.MEDIUM.value, 'between 4 and 20 mins'),
         (VideoDuration.SHORT.value, 'less than 4 mins')
 ]
+
+
 class Tag(models.Model):
 
     def name(self, lang_code):
         try:
             tag_content = self.tagcontent_set.get(language=lang_code)
-        except: # TODO: catch specific Exception
+        except:  # TODO: catch specific Exception
             tag_content = self.tagcontent_set.get(
                                         language=settings.LANGUAGE_CODE
                         )
@@ -36,7 +38,7 @@ class Tag(models.Model):
     def slug(self, lang_code):
         try:
             tag_content = self.tagcontent_set.get(language=lang_code)
-        except: # TODO: catch specific Exception
+        except:  # TODO: catch specific Exception
             tag_content = self.tagcontent_set.get(
                                         language=settings.LANGUAGE_CODE
                         )
@@ -53,8 +55,11 @@ class Tag(models.Model):
 
 
 class TagContent(models.Model):
-    language = models.CharField(max_length=3, choices=LANGUAGE_CHOICES, blank=False)
-    name = models.CharField(max_length=255, unique=True, verbose_name="tag name")
+    language = models.CharField(max_length=3,
+                                choices=LANGUAGE_CHOICES,
+                                blank=False)
+    name = models.CharField(max_length=255, unique=True,
+                            verbose_name="tag name")
     description = models.TextField(blank=True)
     slug = models.SlugField()
 
@@ -92,7 +97,8 @@ class Video(models.Model):
     tags = models.ManyToManyField(Tag, blank=True)
     update = models.ForeignKey('Update', on_delete=models.CASCADE, blank=True,
                                null=True)
-    language = models.CharField(max_length=3, choices=LANGUAGE_CHOICES, blank=False)
+    language = models.CharField(max_length=3,
+                                choices=LANGUAGE_CHOICES, blank=False)
 
     def __str__(self):
         return f"{self.title}\n\t{self.published_at}"
@@ -147,9 +153,10 @@ class YoutubeVideo(Video):
     URL_BASE = "http://youtube.de/watch?v="
     video_id = models.CharField(max_length=255, unique=True)
     live_broadcast = models.CharField(max_length=9, choices=EVENT_TYPE_CHOICES,
-            default='', blank=True)
+                                      default='', blank=True)
     channel = models.ForeignKey(YtChannel, on_delete=models.CASCADE)
-    search_pattern  = models.ForeignKey("YtSearchPattern", on_delete=models.CASCADE)
+    search_pattern = models.ForeignKey("YtSearchPattern",
+                                       on_delete=models.CASCADE)
 
     @property
     def publisher(self):
@@ -161,14 +168,17 @@ class YoutubeVideo(Video):
 
 
 class SearchPattern(models.Model):
-    SEARCH_HELP = "use the Boolean NOT (-) and OR (|) operators to exclude " + \
-            "videos or to find videos that are associated with one of several search terms."
+    SEARCH_HELP = ("use the Boolean NOT (-) and OR (|) operators to exclude "
+                   "videos or to find videos that are associated with one of "
+                   "several search terms.")
 
     # search parameter
-    search_query  = models.CharField(max_length=255, blank=True, help_text=SEARCH_HELP)
+    search_query = models.CharField(max_length=255, blank=True,
+                                    help_text=SEARCH_HELP)
     # add to matching videos
     tags = models.ManyToManyField(Tag, blank=True)
-    language = models.CharField(max_length=3, choices=LANGUAGE_CHOICES, blank=False)
+    language = models.CharField(max_length=3, choices=LANGUAGE_CHOICES,
+                                blank=False)
 
     def save_videos(self):
         raise Exception("save_videos is not implemented")
@@ -185,9 +195,10 @@ class YtSearchPattern(SearchPattern):
 
     """
     duration = models.CharField(max_length=6, choices=DURATION_CHOICES,
-            default='long')
-    event_type = models.CharField(max_length=9, choices=YoutubeVideo.EVENT_TYPE_CHOICES,
-            default='', blank=True)
+                                default='long')
+    event_type = models.CharField(max_length=9,
+                                  choices=YoutubeVideo.EVENT_TYPE_CHOICES,
+                                  default='', blank=True)
     published_before = models.DateTimeField(blank=True, null=True)
     published_after = models.DateTimeField(blank=True, null=True)
     channel = models.ForeignKey(YtChannel, on_delete=models.CASCADE)
@@ -243,17 +254,16 @@ class YtSearchPattern(SearchPattern):
         return f"{self.channel}, q={self.search_query}, {self.duration}"
 
 
-
 class FbSite(models.Model):
     FB_BASE_URL = "https://www.facebook.com"
     slug = models.CharField(max_length=255, blank=False, unique=True)
 
     # @TODO: - name
-    #        - description / mission 
+    #        - description / mission
 
     @property
     def url(self):
-        return urljoin(FB_BASE_URL, self.slug)
+        return urljoin(self.FB_BASE_URL, self.slug)
 
     def __str__(self):
         return f"{self.slug}"
@@ -265,11 +275,12 @@ class FbSite(models.Model):
 
 class FacebookVideo(Video):
     URL_BASE = "https://facebook.com/"
-    URL_TEMPLATE = URL_BASE + "%s/videos/%s"
+    URL_TEMPLATE = f"{URL_BASE}%s/videos/%s"
 
     video_id = models.CharField(max_length=255, unique=True)
     site = models.ForeignKey(FbSite, on_delete=models.CASCADE)
-    search_pattern  = models.ForeignKey("FbSearchPattern", on_delete=models.CASCADE)
+    search_pattern = models.ForeignKey("FbSearchPattern",
+                                       on_delete=models.CASCADE)
 
     @property
     def publisher(self):
@@ -277,8 +288,7 @@ class FacebookVideo(Video):
 
     @property
     def link(self):
-        return urljoin(self.URL_BASE,
-                       self.URL_TEMPLATE % (self.site.slug, self.video_id))
+        return self.URL_TEMPLATE % (self.site.slug, self.video_id)
 
 
 class FbSearchPattern(SearchPattern):

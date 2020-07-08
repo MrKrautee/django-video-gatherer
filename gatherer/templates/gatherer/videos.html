@@ -36,6 +36,23 @@
 
 	margin-bottom: 40px;
 }
+.video-col {
+
+    width: 750px;
+    padding-left: 50px;
+}
+.sidebar-left {
+    position: fixed;
+    width: 250px;
+    margin-top: 60px;
+
+    verflow-y: auto;
+    z-index: 1000;
+    transition: all 0.4s ease 0s;
+}
+#main-container{
+    margin-top: 50px;
+}
 .center {
 	display: block;
   	margin-left: auto;
@@ -70,6 +87,7 @@
     width: 246px;
     height: 138px;
     padding: 5px;
+    background-color: rgba(247, 247, 247);
 }
 .description {
     padding-top: 6px;
@@ -84,6 +102,7 @@
 {% endblock %}
 
 {% block "content" %}
+<h2>{% trans "Videos" %}</h2>
 	<div id="content-header">
         <p><span id="result-count">{{data.count}}</span> {% trans "Videos gefunden." %}</p>
 		<a id="load-previous" href="">Load previous videos</a>
@@ -116,6 +135,10 @@
                         <span class="published-at">
                             {{ video.published_at }}
                         </span>
+                        •
+                        <span class="type">
+                            {{ video.type }}
+                        </span>
                     </span>
                     <p class="description">
                         {{ video.description }}
@@ -131,70 +154,51 @@
 	</div>
 {% endblock %}
 {% block "sidebar" %}
-<p></p>
-<!-- Search Widget -->
-	<div class="card my-4">
-		<h5 class="card-header">sortieren:</h5>
-		<div class="card-body">
-			<div class="input-group">
-				<div class="row">
-					<div class="col-md-auto">{% trans "sortieren nach" %}</div>
-					<div class="col-md-auto">
-						<select class="custom-select custom-select-sm" id="filter">
-								{% for param, name in order_options.items %}
-								<option value="{{param}}"
-									{% if param == order_by %}selected{%endif%}>
-								{{ name }}
-								</option>
-								{% endfor %}
-						</select>
+    <h4>{% trans "Filter" %}</h4>
 
-					</div>
-				</div>
-				<div class="row">
-					<div class="col-md-auto">{% trans "Video Sprache" %}</div>
-					<div class="col-md-auto">
-						<!-- @TODO: form and view-->
-						<select name="video_lang" id="video_lang" class="custom-select custom-select-sm">
-							{% get_current_language as LANGUAGE_CODE %}
-							{% get_available_languages as LANGUAGES %}
-							{% get_language_info_list for LANGUAGES as languages %}
-							<option value="all" {% if "all" == video_lang %} selected{% endif %}>{% trans "alle" %}</option>
-							{% for language in languages %}
-								<option value="{{ language.code }}"{% if language.code == video_lang %} selected{% endif %}>
-									{{ language.name_local }} ({{ language.code }})
-								</option>
-							{% endfor %}
-						</select>
-
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-  <!-- Side Widget -->
-  <div class="card my-4">
-	<h5 class="card-header">{% trans "nach Tags" %}</h5>
-	<div class="card-body" id="tags">
-		<a href="{% url "rest" %}" id="tag-all"
-		{% if current_tag == "all"%}
-				class="badge badge-warning">
-		{% else %}
-				class="badge badge-secondary">
-		{% endif %}
-		{% trans "Alle" %}</a>
-		{% for tag in tags %}
-		{% localize_tag_slug tag LANGUAGE_CODE as tag_slug %}
-		{% localize_tag_name tag LANGUAGE_CODE as tag_name %}
-		<a href="{% url "rest_by_tag" tag_slug %}" name="{{tag_name}}" id="tag-{{tag_slug}}"
-		{% if tag_slug == current_tag %}
-				class="badge badge-warning">
-		{% else %}
-				class="badge badge-secondary">
-		{% endif %}
-		{{tag_name}}
-		</a>
-		{% endfor %}
-	</div>
-  </div>
+        <label for="filter">{% trans "sortieren nach" %}</label>
+        <select class="custom-select custom-select-sm" id="filter">
+                {% for param, name in order_options.items %}
+                <option value="{{param}}"
+                    {% if param == order_by %}selected{%endif%}>
+                {{ name }}
+                </option>
+                {% endfor %}
+        </select>
+        <br>
+        <h5>{% trans "Video Sprache" %}</h5>
+        <select name="video_lang" id="video_lang" class="custom-select custom-select-sm">
+            {% get_current_language as LANGUAGE_CODE %}
+            {% get_available_languages as LANGUAGES %}
+            {% get_language_info_list for LANGUAGES as languages %}
+            <option value="all" {% if "all" == video_lang %} selected{% endif %}>{% trans "alle" %}</option>
+            {% for language in languages %}
+                <option value="{{ language.code }}"{% if language.code == video_lang %} selected{% endif %}>
+                    {{ language.name_local }} ({{ language.code }})
+                </option>
+            {% endfor %}
+        </select>
+        <br>
+        <h5>{% trans "nach Tags" %}</h5>
+        <div id="tags">
+            <a href="{% url "rest" %}" id="tag-all"
+            {% if current_tag == "all"%}
+                    class="badge badge-warning">
+            {% else %}
+                    class="badge badge-secondary">
+            {% endif %}
+            {% trans "Alle" %}</a><br>
+            {% for tag in tags %}
+            {% localize_tag_slug tag LANGUAGE_CODE as tag_slug %}
+            {% localize_tag_name tag LANGUAGE_CODE as tag_name %}
+            <a href="{% url "rest_by_tag" tag_slug %}" name="{{tag_name}}" id="tag-{{tag_slug}}"
+            {% if tag_slug == current_tag %}
+                    class="badge badge-warning">
+            {% else %}
+                    class="badge badge-secondary">
+            {% endif %}
+            {{tag_name}}
+            </a><br>
+            {% endfor %}
+        </div>
 {% endblock %}
