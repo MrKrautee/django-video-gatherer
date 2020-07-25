@@ -18,6 +18,7 @@
   <!-- Bootstrap core JavaScript -->
   <script src="{% static "gatherer/vendor/jquery/jquery.min.js" %}"></script>
   <script src="{% static "gatherer/vendor/bootstrap/js/bootstrap.bundle.min.js" %}"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/3.1.0/css/flag-icon.min.css" rel="stylesheet">
   <script>
 jQuery(document).ready(function($){
   $('#language').change(function(){
@@ -27,13 +28,16 @@ jQuery(document).ready(function($){
   </script>
 <style>
 #language-select, #language-select > a {
-   color: rgba(255,255,255,.5); 
+   /*color: rgba(255,255,255,.5);*/ 
 }
 .language-link {
    font-weight: bold;
 }
 #current-lang {
     text-decoration: underline;
+}
+.navbar {
+    background-color: 
 </style>
 {%block "css" %}
 {% endblock %}
@@ -44,12 +48,11 @@ jQuery(document).ready(function($){
 <body>
 
   <!-- Navigation -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-    <div class="container">
+  <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+    <div class="container-fluid">
       <a class="navbar-brand" href="#">
         {% trans "Online Yogastunden" %}
-        <small>{% trans "übe wann und wo du willst" %}</small>
-      </a>
+      </a><br>
       <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -69,39 +72,41 @@ jQuery(document).ready(function($){
           <li class="nav-item">
             <a class="nav-link" href="#">Contact</a>
           </li>
-        </ul>
-            <div id="language-select">
-                {% get_current_language as LANGUAGE_CODE %}
-                {% get_available_languages as LANGUAGES %}
-                {% get_language_info_list for LANGUAGES as languages %}
-                {% for language in languages %}
-                <a class="language-link"
-                    href="{% url 'set_language' %}?language={{ language.code }}&next=/{{language.code}}/rest/videos/"
-                    {% if language.code == LANGUAGE_CODE %} id="current-lang"{% endif %}>
-                    {{language.code|capfirst }}
-                </a>
-                {% if not forloop.last %}|{% endif %}
-                {% endfor %}
-            </div>
-            <!--form action="{% url 'set_language' %}" method="post"
-                id="lang-form" class="form-inline">{% csrf_token %}
-                <input name="next" type="hidden" value="/rest/videos/">
-              <select name="language" id="language"
-                  class="form-control form-control-sm">
-                {% get_current_language as LANGUAGE_CODE %}
-                {% get_available_languages as LANGUAGES %}
-                {% get_language_info_list for LANGUAGES as languages %}
-                {% for language in languages %}
-                  <option value="{{ language.code }}"{% if language.code == LANGUAGE_CODE %} selected{% endif %}>
-                    {{ language.name_local }} ({{ language.code }})
-                  </option>
-                {% endfor %}
-              </select>
-            </form-->
-      </div>
-    </div>
-  </nav>
+          <li class="nav-item dropdown">
+            {% get_current_language as CURRENT_LANG %}
+            {% get_available_languages as LANGUAGES %}
+            {% get_language_info_list for LANGUAGES as languages %}
+            {% get_language_info for CURRENT_LANG as curr_lang_info %}
+              <a class="nav-link dropdown-toggle"
+                 href="/i18n/setlang/?language={{CURRENT_LANG}}&next=/{{CURRENT_LANG}}/rest/videos/" 
+                        id="lang-dropdown" data-toggle="dropdown" aria-haspopup="true"
+                         aria-expanded="false">
+                  {% if CURRENT_LANG == "en" %}
+                  {% define "us" as flag_code %}
+                  {% else %}
+                  {% define CURRENT_LANG as flag_code %}
+                  {% endif %}
+                  <span class="flag-icon flag-icon-{{flag_code}}"> </span>
+                  {{curr_lang_info.name_local}}</a>
 
+              <div class="dropdown-menu"
+                  aria-labelledby="lang-dropdown">
+                  
+                  {% for language in languages %}
+                  {% if language.code != CURRENT_LANG %}
+                  <a class="dropdown-item"
+                     href="/i18n/setlang/?language={{language.code}}&next=/{{language.code}}/rest/videos/"><span
+                     class="flag-icon flag-icon-{{language.code}}"> </span>
+                     {{language.name_local}}</a>
+                  {% endif %}
+                  {% endfor %}
+              </div>
+          </li>
+
+        </ul>
+      </div><!-- navbar collapse -->
+    </div><!-- container -->
+  </nav>
   <!-- Page Content -->
   <div class="container-fluid" id="main-container">
     <!--div class="row">
