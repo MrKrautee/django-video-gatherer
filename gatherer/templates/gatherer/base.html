@@ -36,8 +36,15 @@ jQuery(document).ready(function($){
 #current-lang {
     text-decoration: underline;
 }
-.navbar {
-    background-color: 
+nav.navbar {
+    background-color: #F8FFF3;
+    border-bottom: 2px solid #FC98B8
+}
+.nav-item {
+    font-size: 1.2em;
+    font-family: sans-serif;
+    font-weight: bold;
+}
 </style>
 {%block "css" %}
 {% endblock %}
@@ -48,31 +55,33 @@ jQuery(document).ready(function($){
 <body>
 
   <!-- Navigation -->
-  <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+  <nav class="navbar navbar-expand-lg navbar-light rounded fixed-top">
     <div class="container-fluid">
-      <a class="navbar-brand" href="#">
-        {% trans "Online Yogastunden" %}
+      <a class="navbar-brand" href="/rest/videos/">
+        <img src="{% static "gatherer/graphics/yoga-online_logo.png" %}"  height="30" alt="">
       </a><br>
       <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbarResponsive">
-        <ul class="navbar-nav ml-auto">
+        <ul class="navbar-nav mr-auto">
           <li class="nav-item active">
-            <a class="nav-link" href="#">Home
+            <a class="nav-link" href="#">Übersicht
               <span class="sr-only">(current)</span>
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#">About</a>
+            <a class="nav-link" href="#">Videos</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#">Services</a>
+            <a class="nav-link" href="#">Channels</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#">Contact</a>
+            <a class="nav-link" href="#">Impressum</a>
           </li>
-          <li class="nav-item dropdown">
+        </ul>
+        <ul class="navbar-nav">
+          <li class="dropdown nav-item">
             {% get_current_language as CURRENT_LANG %}
             {% get_available_languages as LANGUAGES %}
             {% get_language_info_list for LANGUAGES as languages %}
@@ -94,16 +103,22 @@ jQuery(document).ready(function($){
                   
                   {% for language in languages %}
                   {% if language.code != CURRENT_LANG %}
+
+                  {% if language.code == "en" %}
+                  {% define "us" as flag_code %}
+                  {% else %}
+                  {% define language.code as flag_code %}
+                  {% endif %}
                   <a class="dropdown-item"
                      href="/i18n/setlang/?language={{language.code}}&next=/{{language.code}}/rest/videos/"><span
-                     class="flag-icon flag-icon-{{language.code}}"> </span>
+                     class="flag-icon flag-icon-{{flag_code}}"> </span>
                      {{language.name_local}}</a>
                   {% endif %}
                   {% endfor %}
               </div>
           </li>
-
         </ul>
+
       </div><!-- navbar collapse -->
     </div><!-- container -->
   </nav>
