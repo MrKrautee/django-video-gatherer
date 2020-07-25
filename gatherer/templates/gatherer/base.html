@@ -25,6 +25,16 @@ jQuery(document).ready(function($){
       });
 });
   </script>
+<style>
+#language-select, #language-select > a {
+   color: rgba(255,255,255,.5); 
+}
+.language-link {
+   font-weight: bold;
+}
+#current-lang {
+    text-decoration: underline;
+</style>
 {%block "css" %}
 {% endblock %}
 {%block "js" %}
@@ -60,7 +70,20 @@ jQuery(document).ready(function($){
             <a class="nav-link" href="#">Contact</a>
           </li>
         </ul>
-            <form action="{% url 'set_language' %}" method="post"
+            <div id="language-select">
+                {% get_current_language as LANGUAGE_CODE %}
+                {% get_available_languages as LANGUAGES %}
+                {% get_language_info_list for LANGUAGES as languages %}
+                {% for language in languages %}
+                <a class="language-link"
+                    href="{% url 'set_language' %}?language={{ language.code }}&next=/{{language.code}}/rest/videos/"
+                    {% if language.code == LANGUAGE_CODE %} id="current-lang"{% endif %}>
+                    {{language.code|capfirst }}
+                </a>
+                {% if not forloop.last %}|{% endif %}
+                {% endfor %}
+            </div>
+            <!--form action="{% url 'set_language' %}" method="post"
                 id="lang-form" class="form-inline">{% csrf_token %}
                 <input name="next" type="hidden" value="/rest/videos/">
               <select name="language" id="language"
@@ -74,7 +97,7 @@ jQuery(document).ready(function($){
                   </option>
                 {% endfor %}
               </select>
-            </form>
+            </form-->
       </div>
     </div>
   </nav>

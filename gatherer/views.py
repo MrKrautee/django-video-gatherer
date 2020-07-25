@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.views.generic import ListView
 from django.shortcuts import get_object_or_404
 from django.conf import settings
+from django.db import models
 
 from rest_framework.mixins import ListModelMixin
 from rest_framework.viewsets import GenericViewSet
@@ -10,7 +11,7 @@ from rest_framework.renderers import TemplateHTMLRenderer, JSONRenderer
 
 from gatherer.serializers import VideoSerializer, TranslatedTagSerializer
 from gatherer.models import Video
-from gatherer.models import Tag
+from gatherer.models import Tag, TagContent
 
 class VideoList(ListView):
     model = Video
@@ -126,6 +127,9 @@ class VideoListView(ListModelMixin, GenericViewSet):
             #        right language.
             tags = Tag.objects.filter(video__isnull=False).distinct()
             tags = tags.filter(video__language__in=self._video_lang_filter())
+            tags = tags.filter(tagcontent__language=self.request.LANGUAGE_CODE)
+            tags = tags.order_by('tagcontent__name').distinct()
+
             order_by = request.GET.get('order_by', '-published_at')
             page_nr = request.GET.get('page', 1)
 
@@ -162,13 +166,16 @@ def _video_lang_filter(request):
     return language
 
 class TagListView(ListModelMixin, GenericViewSet):
-    queryset = Tag.objects.filter(video__isnull=False).distinct()
+
+    tag_set = Tag.objects.filter(video__isnull=False)
+    queryset = tag_set.distinct()
     serializer_class = TranslatedTagSerializer
     pagination_class = None
 
     def get_queryset(self):
         video_lang = _video_lang_filter(self.request)
         tags = self.queryset.filter(video__language__in=video_lang)
+        tags = tags.order_by('tagcontent_set__name')
         # tags = tags.filter(tagcontent__language__in=video_lang)
         return tags
 

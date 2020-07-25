@@ -42,13 +42,16 @@
     padding-left: 50px;
 }
 .sidebar-left {
-    position: fixed;
+    position: sticky;
     width: 250px;
-    margin-top: 60px;
+    margin-top: 100px;
+    top: 4em;
 
-    verflow-y: auto;
-    z-index: 1000;
-    transition: all 0.4s ease 0s;
+    overflow-y: auto;
+    padding-right: 60px;
+    padding-left: 30px;
+    /*z-index: 1000;
+    transition: all 0.4s ease 0s;*/
 }
 #main-container{
     margin-top: 50px;
@@ -94,6 +97,17 @@
     line-height: 16px;
     font-size: 0.9rem;
 }
+.filter-option {
+    margin-bottom: .8em;
+}
+
+.filter-option label{
+    margin-bottom: 0em;
+    font-weight: bold;
+}
+.filter-option .tag-label{
+    font-weight: inherit;
+}
 /*#tags a {
     margin-left: 4px;
 }*/
@@ -102,9 +116,8 @@
 {% endblock %}
 
 {% block "content" %}
-<h2>{% trans "Videos" %}</h2>
+<h2>{% trans "Videos" %} (<span id="result-count">{{data.count}}</span>)</h2>
 	<div id="content-header">
-        <p><span id="result-count">{{data.count}}</span> {% trans "Videos gefunden." %}</p>
 		<a id="load-previous" href="">Load previous videos</a>
 		<img id="spinner-top" class="center" src='{% static "gatherer/graphics/Spinner-1s-200px.svg" %}'/>
 	</div>
@@ -155,50 +168,76 @@
 {% endblock %}
 {% block "sidebar" %}
     <h4>{% trans "Filter" %}</h4>
-
-        <label for="filter">{% trans "sortieren nach" %}</label>
-        <select class="custom-select custom-select-sm" id="filter">
-                {% for param, name in order_options.items %}
-                <option value="{{param}}"
-                    {% if param == order_by %}selected{%endif%}>
-                {{ name }}
-                </option>
+        <div class="filter-option">
+            <label for="video_lang">{% trans "Video Sprache" %}</label>
+            <select name="video_lang" id="video_lang" class="custom-select custom-select-sm">
+                {% get_current_language as LANGUAGE_CODE %}
+                {% get_available_languages as LANGUAGES %}
+                {% get_language_info_list for LANGUAGES as languages %}
+                <option value="all" {% if "all" == video_lang %} selected{% endif %}>{% trans "alle" %}</option>
+                {% for language in languages %}
+                    <option value="{{ language.code }}"{% if language.code == video_lang %} selected{% endif %}>
+                        {{ language.name_local }} ({{ language.code }})
+                    </option>
                 {% endfor %}
-        </select>
-        <br>
-        <h5>{% trans "Video Sprache" %}</h5>
-        <select name="video_lang" id="video_lang" class="custom-select custom-select-sm">
-            {% get_current_language as LANGUAGE_CODE %}
-            {% get_available_languages as LANGUAGES %}
-            {% get_language_info_list for LANGUAGES as languages %}
-            <option value="all" {% if "all" == video_lang %} selected{% endif %}>{% trans "alle" %}</option>
-            {% for language in languages %}
-                <option value="{{ language.code }}"{% if language.code == video_lang %} selected{% endif %}>
-                    {{ language.name_local }} ({{ language.code }})
-                </option>
-            {% endfor %}
-        </select>
-        <br>
-        <h5>{% trans "nach Tags" %}</h5>
-        <div id="tags">
-            <a href="{% url "rest" %}" id="tag-all"
+            </select>
+        </div>
+        <div class="filter-option">
+            <label for="filter">{% trans "sortieren nach" %}</label>
+            <select class="custom-select custom-select-sm" id="filter">
+                    {% for param, name in order_options.items %}
+                    <option value="{{param}}"
+                        {% if param == order_by %}selected{%endif%}>
+                    {{ name }}
+                    </option>
+                    {% endfor %}
+            </select>
+        </div>
+        <div id="tags" class="filter-option">
+            <label for="name">{% trans "nach Tags" %}</label>
+            <form>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="tags"
+                                                             id="tag-all" value="all" checked>
+                <label class="form-check-label tag-label" for="tag-all">
+                    {% trans "Alle" %}
+                </label>
+            </div>
+
+            <!--a href="{% url "rest" %}" id="tag-all"
             {% if current_tag == "all"%}
                     class="badge badge-warning">
             {% else %}
                     class="badge badge-secondary">
             {% endif %}
-            {% trans "Alle" %}</a><br>
+            {% trans "Alle" %}</a><br-->
             {% for tag in tags %}
             {% localize_tag_slug tag LANGUAGE_CODE as tag_slug %}
             {% localize_tag_name tag LANGUAGE_CODE as tag_name %}
-            <a href="{% url "rest_by_tag" tag_slug %}" name="{{tag_name}}" id="tag-{{tag_slug}}"
+            {% if tag_slug == current_tag %}
+            {% define "checked" as is_checked %}
+            {% else %}
+            {% define "" as is_checked %}
+            {% endif %}
+
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="tags"
+                                                             id="tag-{{tag_slug}}"
+                                                             value="{{tag_slug}}"
+                                                             {{is_checked}}>
+                <label class="form-check-label tag-label" for="tag-{{tag_slug}}">
+                    {{ tag_name }}
+                </label>
+            </div>
+            <!-- a href="{% url "rest_by_tag" tag_slug %}" name="{{tag_name}}" id="tag-{{tag_slug}}"
             {% if tag_slug == current_tag %}
                     class="badge badge-warning">
             {% else %}
                     class="badge badge-secondary">
             {% endif %}
             {{tag_name}}
-            </a><br>
+            </a><br -->
             {% endfor %}
+            </form>
         </div>
 {% endblock %}
