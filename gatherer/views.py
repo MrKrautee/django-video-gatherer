@@ -127,8 +127,13 @@ class VideoListView(ListModelMixin, GenericViewSet):
             #        right language.
             tags = Tag.objects.filter(video__isnull=False).distinct()
             tags = tags.filter(video__language__in=self._video_lang_filter())
-            tags = tags.filter(tagcontent__language=self.request.LANGUAGE_CODE)
-            tags = tags.order_by('tagcontent__name').distinct()
+            # tags = tags.filter(tagcontent__language=self.request.LANGUAGE_CODE)
+            # tags = tags.order_by('tagcontent__name').distinct()
+
+            # needed to use fallback to default language, if tag name in 
+            # selected language does not exist.
+            tags = sorted(tags,
+                          key = lambda tag: tag.name(self.request.LANGUAGE_CODE))
 
             order_by = request.GET.get('order_by', '-published_at')
             page_nr = request.GET.get('page', 1)
@@ -175,13 +180,23 @@ class TagListView(ListModelMixin, GenericViewSet):
     def get_queryset(self):
         video_lang = _video_lang_filter(self.request)
         tags = self.queryset.filter(video__language__in=video_lang)
-        tags = tags.order_by('tagcontent_set__name')
+        #tags = tags.order_by('tagcontent__name').distinct()
+        tags = sorted(tags,
+                       key = lambda tag: tag.name(self.request.LANGUAGE_CODE))
         # tags = tags.filter(tagcontent__language__in=video_lang)
         return tags
 
     def get_serializer_context(self):
         print(self.request.LANGUAGE_CODE)
         return {'lang_code': self.request.LANGUAGE_CODE}
+
+    #def list(self, request, **kwargs):
+
+    #    json_repsonse = super().list(request, **kwargs)
+    #    # tags_sorted = list(sorted(json_repsonse.data, key = lambda t:
+    #    #     t['name']))
+    #    print(json_repsonse)
+    #    return json_repsonse
 
 def videos_view(request):
 

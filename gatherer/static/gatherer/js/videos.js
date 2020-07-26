@@ -27,23 +27,44 @@
     //     return template(tags);
     // };
     var tagTemplate = function(data){
-        var tagAll = $('#tag-all').clone(true);
+        var tagInput = $('#tag-all');
         // ?? why losing margin after clone ??
-        tagAll.attr("style", "margin-right: 4px;");
-        var baseUrl = tagAll.attr("href");
-        // $("#tags").html(tagAll);
+        // tagInput.attr("style", "margin-right: 4px;");
+        var tagAllDiv = tagInput.parent().clone(true);
+        var baseUrl = tagInput.attr("href");
         var tagListHtml = []
-        tagListHtml.push(tagAll);
+        tagListHtml.push(tagAllDiv);
         data.forEach(function(tagData){
-            var tag = tagAll.clone(true);
-            tag.attr("href", baseUrl+tagData.slug);
-            tag.attr("name", tagData.name);
-            tag.attr("id", "tag-"+tagData.slug);
-            tag.html(tagData.name);
-            tagListHtml.push(tag);
+            var tagDiv = tagAllDiv.clone(true);
+            var tagInput = tagDiv.find('#tag-all');
+            var tagLabel = tagDiv.find('label');
+            tagInput.attr("href", baseUrl+tagData.slug);
+            // tagInput.attr("name", tagData.name);
+            tagInput.attr("id", "tag-"+tagData.slug);
+            tagLabel.html(tagData.name);
+            tagLabel.attr('for', 'tag-'+tagData.slug);
+            tagListHtml.push(tagDiv);
             // $("#tags").append(tag);
 
         });
+
+        // var tagAll = $('#tag-all').clone(true);
+        // // ?? why losing margin after clone ??
+        // tagAll.attr("style", "margin-right: 4px;");
+        // var baseUrl = tagAll.attr("href");
+        // // $("#tags").html(tagAll);
+        // var tagListHtml = []
+        // tagListHtml.push(tagAll);
+        // data.forEach(function(tagData){
+        //     var tag = tagAll.clone(true);
+        //     tag.attr("href", baseUrl+tagData.slug);
+        //     tag.attr("name", tagData.name);
+        //     tag.attr("id", "tag-"+tagData.slug);
+        //     tag.html(tagData.name);
+        //     tagListHtml.push(tag);
+        //     // $("#tags").append(tag);
+
+        // });
         return tagListHtml;
     };
     var videoTemplate = function(videosJson){
@@ -115,7 +136,7 @@
             return state;
         };
         this.load = function(){
-            hiCurrTag($("#"+state.tagId));
+            // hiCurrTag($("#"+state.tagId));
             return this.loadVideos(this.fullUrl());
         };
         this.fullUrl = function(){
@@ -147,7 +168,9 @@
             return $.get(url, function(data){
                 var tagListHtml = tagTemplate(data);
                 $("#tags").html(tagListHtml);
-                hiCurrTag($("#"+state.tagId));
+                // hiCurrTag($("#"+state.tagId));
+                console.log("tags update: "+data);
+                console.log(data);
             }, "json");
         };
         

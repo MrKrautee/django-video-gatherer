@@ -49,7 +49,10 @@
 
     overflow-y: auto;
     padding-right: 60px;
-    padding-left: 30px;
+    padding-left: 10px;
+    margin-left: 30px;
+    /*margin-right: 30px;*/
+    border-left: 2px solid #FC98B8;
     padding-top: 8px;
     /*border-radius: 15px;
     background-color: #FFF3F7;
@@ -96,7 +99,8 @@
     width: 246px;
     height: 138px;
     padding: 5px;
-    background-color: rgba(247, 247, 247);
+    /*background-color: rgba(247, 247, 247);*/
+    background-color: #F8FFF3;
 }
 
 
@@ -120,6 +124,10 @@ a:hover.video-link, a:active.video-link, a:link.video-link, a:visited.video-link
 }
 .filter-option .tag-label{
     font-weight: inherit;
+}
+.tag {
+    display: block;
+    margin-bottom: 8px;
 }
 /*#tags a {
     margin-left: 4px;
@@ -206,51 +214,42 @@ a:hover.video-link, a:active.video-link, a:link.video-link, a:visited.video-link
                     {% endfor %}
             </select>
         </div>
-        <div id="tags" class="filter-option">
+        <div class="filter-option">
             <label for="name">{% trans "nach Tags" %}</label>
-            <form>
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="tags"
-                                                             id="tag-all" value="all" checked>
-                <label class="form-check-label tag-label" for="tag-all">
-                    {% trans "Alle" %}
-                </label>
-            </div>
+            <div id="tags">
+                <div class="pretty p-icon p-smooth tag">
+                    <input class="form-check-input" type="checkbox" name="tags"
+                                                                 id="tag-all" value="all" checked>
+                    <div class="state">
+                        <i class="icon mdi mdi-check"></i>
+                        <label class="form-check-label tag-label" for="tag-all">
+                        {% trans "Alle" %}
+                        </label>
+                    </div>
+                </div>
 
-            <!--a href="{% url "rest" %}" id="tag-all"
-            {% if current_tag == "all"%}
-                    class="badge badge-warning">
-            {% else %}
-                    class="badge badge-secondary">
-            {% endif %}
-            {% trans "Alle" %}</a><br-->
-            {% for tag in tags %}
-            {% localize_tag_slug tag LANGUAGE_CODE as tag_slug %}
-            {% localize_tag_name tag LANGUAGE_CODE as tag_name %}
-            {% if tag_slug == current_tag %}
-            {% define "checked" as is_checked %}
-            {% else %}
-            {% define "" as is_checked %}
-            {% endif %}
+                {% for tag in tags %}
+                {% localize_tag_slug tag LANGUAGE_CODE as tag_slug %}
+                {% localize_tag_name tag LANGUAGE_CODE as tag_name %}
+                {% if tag_slug == current_tag %}
+                {% define "checked" as is_checked %}
+                {% else %}
+                {% define "" as is_checked %}
+                {% endif %}
 
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="tags"
-                                                             id="tag-{{tag_slug}}"
-                                                             value="{{tag_slug}}"
-                                                             {{is_checked}}>
-                <label class="form-check-label tag-label" for="tag-{{tag_slug}}">
-                    {{ tag_name }}
-                </label>
+                <div class="pretty p-icon p-smooth tag">
+                    <input class="form-check-input" type="checkbox" name="tags"
+                                                                 id="tag-{{tag_slug}}"
+                                                                 value="{{tag_slug}}"
+                                                                 {{is_checked}}>
+                    <div class="state">
+                        <i class="icon mdi mdi-check"></i>
+                        <label class="form-check-label tag-label" for="tag-{{tag_slug}}">
+                        {{ tag_name }}
+                        </label>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
-            <!-- a href="{% url "rest_by_tag" tag_slug %}" name="{{tag_name}}" id="tag-{{tag_slug}}"
-            {% if tag_slug == current_tag %}
-                    class="badge badge-warning">
-            {% else %}
-                    class="badge badge-secondary">
-            {% endif %}
-            {{tag_name}}
-            </a><br -->
-            {% endfor %}
-            </form>
         </div>
 {% endblock %}
