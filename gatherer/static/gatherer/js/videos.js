@@ -122,6 +122,7 @@
                 order_by: order_by,
                 video_lang: video_lang,
                 page: page_nr,
+                tags: [],
             },
             baseUrl: location.protocol + '//' + location.host + location.pathname,
             tagId: tag_id,
@@ -140,7 +141,7 @@
             return this.loadVideos(this.fullUrl());
         };
         this.fullUrl = function(){
-            var url = state.baseUrl + "?" + $.param(state.params);
+            var url = state.baseUrl + "?" + $.param(state.params, true);
             return url;
         };
         this.resetPagination = function(){
@@ -210,13 +211,28 @@
         this.previous = function(){
             return state.pagination.previous;
         };
-        this.loadByTag = function(tagUrl, tagId){
+        this.loadByTag = function(tagSlug, tagId){
             this.resetPagination();
-            state.baseUrl = tagUrl;
+            // state.baseUrl = tagUrl;
             state.tagId = tagId;
+            state.params.tags.push(tagSlug);
             this.toHistory();
             return this.load();
         };
+        this.addTag = function(tagSlug){
+            this.resetPagination();
+            state.params.tags.push(tagSlug);
+            this.toHistory();
+            return this.load();
+        }
+        this.delTag = function(tagSlug){
+            this.resetPagination();
+            var idx = state.params.tags.indexOf(tagSlug);
+            if (idx > -1) { state.params.tags.splice(idx, 1);};
+            this.toHistory();
+            return this.load();
+        }
+
         this.changeOrder = function(orderBy){
             state.params.order_by = orderBy;
             this.resetPagination();
@@ -263,10 +279,18 @@
 		// });
 		// $('#spinner').css("display", "block");
 		// tags
-		$("#tags > a").each(function(){
-			$(this).click(function(e){
-                page.loadByTag($(this).attr('href'), $(this).attr('id'));
-				e.preventDefault();
+		$("#tags input").each(function(){
+			$(this).change(function(e){
+                if(this.checked){
+                    console.log("check");
+                    page.addTag(this.value);
+                    e.preventDefault();
+                }else{
+                    console.log("uncheck");
+                    page.delTag(this.value);
+                    e.preventDefault();
+                }
+
 			});
 		});
 		$('#filter').change(function(){

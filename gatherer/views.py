@@ -108,6 +108,13 @@ class VideoListView(ListModelMixin, GenericViewSet):
             tag = self.kwargs['tag']
             qs = Video.objects.filter(tags__tagcontent__slug=tag,
                     language__in=lang_filter).order_by(order_by)
+        elif self.request.GET.get('tags'):
+            tags = self.request.GET.getlist('tags')
+            print(tags)
+            qs = Video.objects.filter(tags__tagcontent__slug__in=tags,
+                    language__in=lang_filter).order_by(order_by)
+
+
         else:
             qs = Video.objects.filter(language__in=lang_filter).order_by(order_by)
         return qs
