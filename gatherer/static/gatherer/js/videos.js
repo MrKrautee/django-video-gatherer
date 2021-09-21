@@ -52,7 +52,6 @@
             videoType.html(video.type);
             // tags
             var videoTags = newVideoDiv.find(".tags").first();
-            console.log(video.tags);
             var tags_str = "";
             video.tags.forEach( el => {
                 tags_str += el.name + " | ";

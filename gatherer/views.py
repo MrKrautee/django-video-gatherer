@@ -3,6 +3,7 @@ from django.views.generic import ListView
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 
 from rest_framework.mixins import ListModelMixin
 from rest_framework.viewsets import GenericViewSet
@@ -120,9 +121,19 @@ class VideoListView(ListModelMixin, GenericViewSet):
                     language__in=lang_filter).order_by(order_by)
         elif self.request.GET.get('tags'):
             tags = self.request.GET.getlist('tags')
-            # print(tags)
+            # get videos with one of the given tags
             qs = Video.objects.filter(tags__tagcontent__slug__in=tags,
-                    language__in=lang_filter).order_by(order_by)
+                    language__in=lang_filter).distinct().order_by(order_by)
+            
+            # get only videos with all given tags
+            tag_queries = [ ~Q(tags__tagcontent__slug=tag) for tag in tags]
+            tag_query = tag_queries.pop()
+            for q in tag_queries:
+                tag_query |= q
+    
+            qs = qs.exclude(tag_query)
+
+
 
 
         else:
