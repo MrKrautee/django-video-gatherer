@@ -209,25 +209,31 @@ class TagListView(ListModelMixin, GenericViewSet):
     pagination_class = None
 
     def get_queryset(self):
+        print("get queryset")
         video_lang = _video_lang_filter(self.request)
         tags = self.queryset.filter(video__language__in=video_lang)
-        #tags = tags.order_by('tagcontent__name').distinct()
+        print(self.request.LANGUAGE_CODE)
         tags = sorted(tags,
                        key = lambda tag: tag.name(self.request.LANGUAGE_CODE))
+        print(tags)
         # tags = tags.filter(tagcontent__language__in=video_lang)
         return tags
 
     def get_serializer_context(self):
-        print(self.request.LANGUAGE_CODE)
-        return {'lang_code': self.request.LANGUAGE_CODE}
+        return {
+            'lang_code': self.request.LANGUAGE_CODE, 
+            'request': self.request
+        }
 
-    #def list(self, request, **kwargs):
-
-    #    json_repsonse = super().list(request, **kwargs)
-    #    # tags_sorted = list(sorted(json_repsonse.data, key = lambda t:
-    #    #     t['name']))
-    #    print(json_repsonse)
-    #    return json_repsonse
+    # def list(self, request, **kwargs):
+    #     # print(request.LANGUAGE_CODE)
+    #     # request.LANGUAGE_CODE = self.request.LANGUAGE_CODE
+    #     json_repsonse = super().list(request, **kwargs)
+    #     tags_sorted = list(sorted(json_repsonse.data, key = lambda t:
+    #         t['name']))
+    #     print(json_repsonse)
+    #     json_repsonse.data = tags_sorted
+    #     return json_repsonse
 
 def videos_view(request):
 

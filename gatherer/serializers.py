@@ -53,10 +53,18 @@ class TranslatedTagSerializer(serializers.ModelSerializer):
         fields = ['name', 'slug']
 
     def get_name(self, obj):
-        return obj.name(self.context['request'].LANGUAGE_CODE)
+        try:
+            return obj.name(self.context['request'].LANGUAGE_CODE)
+        except KeyError:
+            print("glitch: no lang code")
+            return obj.name('en') #@HACK
 
     def get_slug(self, obj):
-        return obj.slug(self.context['request'].LANGUAGE_CODE)
+        try:
+            return obj.slug(self.context['request'].LANGUAGE_CODE)
+        except KeyError:
+            return obj.name('en') #@HACK
+        
 
 
 class YtChannelSerializer(serializers.ModelSerializer):

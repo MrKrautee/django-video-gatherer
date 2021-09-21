@@ -1,7 +1,10 @@
 (function($) {
     'use strict';
     var tagTemplate = function(data){
-        var tagAllDiv = $('#tags .tag').first();
+        // var tagAllDiv = $('#tags .tag').first();
+        var tagAllDiv = $("#tag-template").clone();
+        tagAllDiv.css("display", "block");
+        tagAllDiv.attr("id", "");
         var tagListHtml = []
         console.log(data);
         if(data){
@@ -64,6 +67,7 @@
         return videoListHtml;
 
     };
+ 
     /** parameters defined in html template:
      *  next_video_page,
      *  prev_video_page,
@@ -184,9 +188,28 @@
         this.updateTags = function(){
             var tags_url = getTemplateParam("tags_ajax_url");
             var url = tags_url + '?' +  $.param(state.params, true);
+            var THIS = this;
             return $.get(url, function(data){
                 var tagListHtml = tagTemplate(data);
                 $("#tags").html(tagListHtml);
+                $("#tags input").each(function(){
+                    $(this).change(function(e){
+                        if(this.checked){
+                            console.log("check");
+                            // if(this.value != 'all'){
+                            //     $('#tags input#tag-all:checked').prop('checked', false);
+                            // }
+                            THIS.addTag(this.value);
+                            console.log('add tag '+this.value);
+                            e.preventDefault();
+                        }else{
+                            console.log("uncheck");
+                            THIS.delTag(this.value);
+                            e.preventDefault();
+                        }
+        
+                    });
+                });
             }, "json").done((data) => {
                     this.selectTags();
                     var newTags = [];
