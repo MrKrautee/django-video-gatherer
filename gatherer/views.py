@@ -13,66 +13,76 @@ from gatherer.serializers import VideoSerializer, TranslatedTagSerializer
 from gatherer.models import Video
 from gatherer.models import Tag, TagContent
 
-class VideoList(ListView):
-    model = Video
-    order_options = {
-            "-published_at": "Datum ab",
-            "published_at": "Datum auf",
-            "-duration": "Dauer ab",
-            "duration": "Dauer auf",
-    }
-    order_by = '-published_at'
+from django.http import HttpResponse, HttpResponseRedirect
+import google.oauth2.credentials
+import google_auth_oauthlib.flow
 
-    def _video_lang_filter(self):
-        # video language
-        # user changed video lang
-        if self.request.method == 'GET':
-            if self.request.GET.get('video_lang'):
-                video_lang = self.request.GET.get('video_lang')
-                self.request.session['video_lang'] = video_lang
-        # no video lang selected -> show all videos
-        if 'video_lang' not in self.request.session.keys():
-            self.request.session['video_lang'] = 'all'
-        # video lang saved 
-        session_vlang = self.request.session['video_lang']
-        if session_vlang and session_vlang != 'all':
-            language = [self.request.session['video_lang'],]
-        else: # all: show videos in all languages
-            language = [code for code,_ in settings.LANGUAGES]
-        return language
+CLIENT_SECRETS_FILE = '/home/kraut/Downloads/client_secret.json'
+SCOPES = ['https://www.googleapis.com/auth/youtube.readonly']
 
+# @TODO: DEV ONLY
+import os 
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+# <-- WARNING: development mode only
 
-    def get_queryset(self):
-        order_by = self.order_by
-        if self.request.method == 'GET':
-            order_by = self.request.GET.get('order_by', order_by)
-        if 'tag' in self.kwargs.keys():
-            tag = self.kwargs['tag']
-            qs = Video.objects.filter(tags__tagcontent__slug=tag)
-        else:
-            qs = Video.objects.all()
-        qs = qs.filter(language__in=self._video_lang_filter())
-        qs = qs.order_by(order_by)
-        return qs
+def credentials_to_dict(credentials):
+  return {'token': credentials.token,
+          'refresh_token': credentials.refresh_token,
+          'token_uri': credentials.token_uri,
+          'client_id': credentials.client_id,
+          'client_secret': credentials.client_secret,
+          'scopes': credentials.scopes}
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+def google_login(request):
+    # Use the client_secret.json file to identify the application requesting
+    # authorization. The client ID (from that file) and access scopes are required.
+    flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
+        CLIENT_SECRETS_FILE,
+        SCOPES)
 
-        tags = Tag.objects.filter(video__isnull=False).distinct()
-        tags = tags.filter(video__language__in=self._video_lang_filter())
-        order_by = self.request.GET.get('order_by', self.order_by) \
-                if self.request.method == 'GET' else self.order_by
-        tag = self.kwargs['tag'] if 'tag' in self.kwargs.keys() else ''
+    # Indicate where the API server will redirect the user after the user completes
+    # the authorization flow. The redirect URI is required. The value must exactly
+    # match one of the authorized redirect URIs for the OAuth 2.0 client, which you
+    # configured in the API Console. If this value doesn't match an authorized URI,
+    # you will get a 'redirect_uri_mismatch' error.
+    flow.redirect_uri = 'http://localhost:8000/en/videos/oauth2callback'
 
-        extra_context = {
-                **context,
-                'tags': tags,
-                'current_tag': tag,
-                'order_by': order_by,
-                'order_options': self.order_options,
-                'video_lang': self.request.session.get('video_lang'),
-        }
-        return extra_context
+    # Generate URL for request to Google's OAuth 2.0 server.
+    # Use kwargs to set optional request parameters.
+    authorization_url, state = flow.authorization_url(
+        # Enable offline access so that you can refresh an access token without
+        # re-prompting the user for permission. Recommended for web server apps.
+        access_type='offline',
+        # Enable incremental authorization. Recommended as a best practice.
+        include_granted_scopes='true')
+    request.session['google_state'] = state
+    request.session.modified = True
+
+    return HttpResponseRedirect(authorization_url)
+
+def google_callback(request):
+    # Specify the state when creating the flow in the callback so that it can
+    # verified in the authorization server response.
+    state = request.session['google_state']
+
+    flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
+        CLIENT_SECRETS_FILE, scopes=SCOPES, state=state)
+    flow.redirect_uri = 'http://localhost:8000/en/videos/oauth2callback'
+
+    # Use the authorization server's response to fetch the OAuth 2.0 tokens.
+    # authorization_response = request.path
+    # flow.fetch_token(authorization_response=authorization_response)
+    flow.fetch_token(code=request.GET.get('code'))
+
+    # Store credentials in the session.
+    # ACTION ITEM: In a production app, you likely want to save these
+    #              credentials in a persistent database instead.
+    credentials = flow.credentials
+    request.session['credentials'] = credentials_to_dict(credentials)
+
+    context = {'credentials': credentials,
+                'state': state}
+    return render(request, "gatherer/test_google.html", context)
 
 
 class VideoListView(ListModelMixin, GenericViewSet):
@@ -110,17 +120,20 @@ class VideoListView(ListModelMixin, GenericViewSet):
                     language__in=lang_filter).order_by(order_by)
         elif self.request.GET.get('tags'):
             tags = self.request.GET.getlist('tags')
-            print(tags)
+            # print(tags)
             qs = Video.objects.filter(tags__tagcontent__slug__in=tags,
                     language__in=lang_filter).order_by(order_by)
 
 
         else:
             qs = Video.objects.filter(language__in=lang_filter).order_by(order_by)
+            # print(qs)
         return qs
 
     def list(self, request, **kwargs):
+        # kwargs["lang_code"] = self.request.LANGUAGE_CODE
         json_repsonse = super().list(request, **kwargs)
+        # print(json_repsonse)
         if request.accepted_renderer.format == 'html':
             order_options = {
                     "-published_at": "Datum ab",

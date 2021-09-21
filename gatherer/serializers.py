@@ -53,10 +53,10 @@ class TranslatedTagSerializer(serializers.ModelSerializer):
         fields = ['name', 'slug']
 
     def get_name(self, obj):
-        return obj.name(self.context['lang_code'])
+        return obj.name(self.context['request'].LANGUAGE_CODE)
 
     def get_slug(self, obj):
-        return obj.slug(self.context['lang_code'])
+        return obj.slug(self.context['request'].LANGUAGE_CODE)
 
 
 class YtChannelSerializer(serializers.ModelSerializer):
@@ -84,7 +84,8 @@ TIME_STRINGS = {
 class VideoSerializer(serializers.ModelSerializer):
 
     publisher = serializers.SerializerMethodField()
-    tags = TagSerializer(many=True, read_only=True)
+    tags = TranslatedTagSerializer(many=True, read_only=True)
+    # tags = TagSerializer(many=True, read_only=True)
     title = serializers.SerializerMethodField()
     description = serializers.SerializerMethodField()
     published_at = serializers.SerializerMethodField()

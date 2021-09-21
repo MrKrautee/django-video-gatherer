@@ -1,77 +1,32 @@
 (function($) {
     'use strict';
-    // template tag
-    // Handlebars.registerHelper('truncwords', function(text, length) {
-    //     var words = text.split(" ");
-    //     var new_text = text;
-    //     if (words.length > length){
-    //         new_text = "";
-    //         for (var i = 0; i <= length; i++) {
-    //            new_text += words[i] + " ";
-    //         }  
-    //         new_text = new_text.trim() + "..."          
-    //     }
-    //     return new_text;
-    // });
-    // insert data into template
-    // var videoTemplate = function(data) {
-    //     var source = document.getElementById("video-template").innerHTML;
-    //     var template = Handlebars.compile(source);
-    //     var html = template(data);
-    //     return html;
-    // };
-    // var tagTemplate = function(data, baseUrl){
-    //     var tags = {tags: data, baseUrl: baseUrl};
-    //     var source = document.getElementById("tag-template").innerHTML;
-    //     var template = Handlebars.compile(source);
-    //     return template(tags);
-    // };
     var tagTemplate = function(data){
-        var tagInput = $('#tag-all');
-        // ?? why losing margin after clone ??
-        // tagInput.attr("style", "margin-right: 4px;");
-        var tagAllDiv = tagInput.parent().clone(true);
-        var baseUrl = tagInput.attr("href");
+        var tagAllDiv = $('#tags .tag').first();
         var tagListHtml = []
-        tagListHtml.push(tagAllDiv);
-        data.forEach(function(tagData){
-            var tagDiv = tagAllDiv.clone(true);
-            var tagInput = tagDiv.find('#tag-all');
-            var tagLabel = tagDiv.find('label');
-            tagInput.attr("href", baseUrl+tagData.slug);
-            // tagInput.attr("name", tagData.name);
-            tagInput.attr("id", "tag-"+tagData.slug);
-            tagLabel.html(tagData.name);
-            tagLabel.attr('for', 'tag-'+tagData.slug);
-            tagListHtml.push(tagDiv);
-            // $("#tags").append(tag);
-
-        });
-
-        // var tagAll = $('#tag-all').clone(true);
-        // // ?? why losing margin after clone ??
-        // tagAll.attr("style", "margin-right: 4px;");
-        // var baseUrl = tagAll.attr("href");
-        // // $("#tags").html(tagAll);
-        // var tagListHtml = []
-        // tagListHtml.push(tagAll);
-        // data.forEach(function(tagData){
-        //     var tag = tagAll.clone(true);
-        //     tag.attr("href", baseUrl+tagData.slug);
-        //     tag.attr("name", tagData.name);
-        //     tag.attr("id", "tag-"+tagData.slug);
-        //     tag.html(tagData.name);
-        //     tagListHtml.push(tag);
-        //     // $("#tags").append(tag);
-
-        // });
+        console.log(data);
+        if(data){
+            data.forEach(function(tagData){
+                var tagDiv = tagAllDiv.clone(true);
+                var tagInput = tagDiv.find('input').first();
+                tagInput.prop('checked', false);
+                var tagLabel = tagDiv.find('label');
+                tagInput.attr("id", "tag-"+tagData.slug);
+                tagInput.attr("value", tagData.slug);
+                tagLabel.html(tagData.name);
+                tagLabel.attr('for', 'tag-'+tagData.slug);
+                tagListHtml.push(tagDiv);
+            });
+        }
         return tagListHtml;
     };
     var videoTemplate = function(videosJson){
-        var videoDiv = $("#content-body").children().first().clone();
+        var videoDiv = $("#video-template").clone();
+        videoDiv.css("display", "flex");
+        videoDiv.attr("id", "");
         var videoListHtml = [];
         videosJson.results.forEach(function(video){
             var newVideoDiv = videoDiv.clone();
+            
             // title + link
             var videoLink = newVideoDiv.find(".video-link").first();
             videoLink.attr("href",video.link);
@@ -95,37 +50,50 @@
             // type
             var videoType = newVideoDiv.find(".type").first();
             videoType.html(video.type);
-            // ? tags
+            // tags
+            var videoTags = newVideoDiv.find(".tags").first();
+            console.log(video.tags);
+            var tags_str = "";
+            video.tags.forEach( el => {
+                tags_str += el.name + " | ";
+            });
+            videoTags.html(tags_str.substring(0, tags_str.length-3));
+            
             // insert video
             videoListHtml.push(newVideoDiv);
         });
         return videoListHtml;
 
     };
-    // highlight currnt tag
-    function hiCurrTag(tagElement){
-        $("#tags > a").each(function(){
-            $(this).attr("class", "badge badge-secondary");
-        });
-        tagElement.attr("class", "badge badge-warning")
-    };
+    /** parameters defined in html template:
+     *  next_video_page,
+     *  prev_video_page,
+     *  order_by,
+     *  video_lang,
+     *  page_nr,
+     *  tags_ajax_url,
+     *  page_title,
+     *
+     **/
+    var getTemplateParam = function(elementId){
+        return JSON.parse(document.getElementById(elementId).textContent);
+    }
 
     var VideoPage = function (){
 
         var state = {
             pagination: {
-                previous: JSON.parse(document.getElementById('prev_video_page').textContent),
-                next: JSON.parse(document.getElementById('next_video_page').textContent),
+                previous: getTemplateParam('prev_video_page'),
+                next: getTemplateParam('next_video_page'),
                 // current: window.location.toString(),
             },
             params: {
-                order_by: order_by,
-                video_lang: video_lang,
-                page: page_nr,
+                order_by: getTemplateParam('order_by'),
+                video_lang: getTemplateParam('initial_video_lang'),
+                page: getTemplateParam('page_nr'),
                 tags: [],
             },
             baseUrl: location.protocol + '//' + location.host + location.pathname,
-            tagId: tag_id,
             pageTitle: page_title,
         };
 
@@ -137,6 +105,8 @@
             return state;
         };
         this.load = function(){
+            // console.log(state.params.tags);
+            window. scrollTo(0,0);
             // hiCurrTag($("#"+state.tagId));
             return this.loadVideos(this.fullUrl());
         };
@@ -159,21 +129,13 @@
         };
         this.getVideos = function(url, fnStr){
             return $.get(url, function(data){
+                console.log(data);
                 var videoHtml = videoTemplate(data);
                 $("#content-body")[fnStr](videoHtml);
             }, "json");
         };
 
-        this.updateTags = function(){
-            var url = "/rest/tags";
-            return $.get(url, function(data){
-                var tagListHtml = tagTemplate(data);
-                $("#tags").html(tagListHtml);
-                // hiCurrTag($("#"+state.tagId));
-                console.log("tags update: "+data);
-                console.log(data);
-            }, "json");
-        };
+
         
         //replace content body
         this.loadVideos = function(url){
@@ -211,13 +173,33 @@
         this.previous = function(){
             return state.pagination.previous;
         };
-        this.loadByTag = function(tagSlug, tagId){
-            this.resetPagination();
-            // state.baseUrl = tagUrl;
-            state.tagId = tagId;
-            state.params.tags.push(tagSlug);
-            this.toHistory();
-            return this.load();
+        // highlight currnt tag
+        this.selectTags = function(){
+            state.params.tags.forEach( 
+                (element) => {
+                    // console.log(element);
+                    $('#tags input[value='+element+']').prop('checked', true);
+                }
+            );
+        };
+        this.updateTags = function(){
+            var tags_url = getTemplateParam("tags_ajax_url");
+            var url = tags_url + '?' +  $.param(state.params, true);
+            return $.get(url, function(data){
+                var tagListHtml = tagTemplate(data);
+                $("#tags").html(tagListHtml);
+            }, "json").done((data) => {
+                    this.selectTags();
+                    var newTags = [];
+                    // remove tags from state which are not in tag list.
+                    state.params.tags.forEach( (tagSlug, idx) => {
+                        if( data.filter((tag) => tag.slug === tagSlug).length === 1){
+                            console.log(tagSlug + " in tags");
+                            newTags.push(tagSlug);
+                        }
+                    });
+                    state.params.tags = newTags;
+            });
         };
         this.addTag = function(tagSlug){
             this.resetPagination();
@@ -229,10 +211,10 @@
             this.resetPagination();
             var idx = state.params.tags.indexOf(tagSlug);
             if (idx > -1) { state.params.tags.splice(idx, 1);};
+            
             this.toHistory();
             return this.load();
-        }
-
+        };
         this.changeOrder = function(orderBy){
             state.params.order_by = orderBy;
             this.resetPagination();
@@ -241,9 +223,12 @@
         };
         this.changeLang = function(lang){
             state.params.video_lang = lang;
-            this.resetPagination();
-            this.toHistory();
-            return this.load();
+            // ?return 
+            this.updateTags().done(() => {
+                this.resetPagination();
+                this.toHistory();
+                return this.load();
+            });
         };
     }
     var page = new VideoPage();
@@ -283,7 +268,11 @@
 			$(this).change(function(e){
                 if(this.checked){
                     console.log("check");
+                    // if(this.value != 'all'){
+                    //     $('#tags input#tag-all:checked').prop('checked', false);
+                    // }
                     page.addTag(this.value);
+                    console.log('add tag '+this.value);
                     e.preventDefault();
                 }else{
                     console.log("uncheck");
@@ -300,9 +289,7 @@
 		});
 		$('#video_lang').change(function(){
 			if($(this).val() != ""){
-                page.changeLang($(this).val()).done(function(){
-                    page.updateTags();
-                });
+                page.changeLang($(this).val());
 			}
 		});
         // load specific page

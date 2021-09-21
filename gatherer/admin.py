@@ -68,13 +68,19 @@ class VideoTypeListFilter(admin.SimpleListFilter):
                 qs = qs.exclude(id=video.id)
         return qs
 
-
+    # Verena Leuze	UCZ2xxNOEmYxP2JNQl8MFeOw
+	# JULOVEYOGA	UCr-SpuxDH4tZVtEhslkOdRw
+	# LENA PILAR YOGA	UCTpITHxEPbncd2mqnBC6jDA
+	# Mascha Trietsch	UCP7YItwzwO_wdoFx_0Pb03w
+	# Mady Morrison	UCHJBoCDxaCTRrwCHXEBA-BA
+	# MrKrautee	UC3slESOJpcy6rBYq7v_QAVA
+	# Anna Kalhammer	UCjhJ5nFbhwpyGlnnavCwQnA
 class VideoAdmin(admin.ModelAdmin):
     list_display = ('is_active', 'title', 'short_description', 'tags_list',
         'duration', 'published_at', 'update')
     list_display_links = ('title', )
     list_per_page=300
-    search_fields = ('title', 'description')
+    search_fields = ('title', ) #'description'
     list_filter = ('is_active', 'tags', 'language', VideoTypeListFilter) 
     actions = ['activate', 'deactivate', 'add_tags']
     autocomplete_fields = ['tags']
