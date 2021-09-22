@@ -19,6 +19,7 @@ from facebook_video_scraper.views import VideoDetailsListView
 from gatherer.models import Video
 from gatherer.models import Tag
 from gatherer.models import TagContent
+from gatherer.models import TagKeyword
 from gatherer.models import YtSearchPattern
 from gatherer.models import FbSearchPattern
 from gatherer.models import YtChannel
@@ -315,6 +316,10 @@ class TagAdmin(admin.ModelAdmin):
     inlines = [ TagConentInline, ]
     search_fields = ['tagcontent_name']
 
+class TagKeywordAdmin(admin.ModelAdmin):
+    list_display = ('keyword', 'tag')
+
+
 class TagContentAdmin(admin.ModelAdmin):
     list_display = ('name', )
     search_fields = ['name']
@@ -355,6 +360,7 @@ class UpdateAdmin(admin.ModelAdmin):
     videos.short_description = "videos updated"
 
 
+admin.site.register(TagKeyword, TagKeywordAdmin)
 admin.site.register(Video, VideoAdmin)
 admin.site.register(YtSearchPattern, YtSearchPatternAdmin)
 admin.site.register(FbSearchPattern, FbSearchPatternAdmin)

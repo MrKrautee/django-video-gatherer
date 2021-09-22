@@ -8,6 +8,8 @@ from django.utils import dateparse
 from django.db import transaction
 from django.urls import reverse
 from django.conf import settings
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 from gatherer.tools import youtube_finder, EventType, VideoDuration
 from gatherer.tools import facebook_finder
@@ -71,6 +73,13 @@ class TagContent(models.Model):
     class Meta:
         unique_together = ('tag', 'language')
 
+class TagKeyword(models.Model):
+    keyword = models.CharField(max_length=255, blank=False)
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return "%s" % self.keyword
+
 
 class YtChannel(models.Model):
     channel_id = models.CharField(max_length=255)
@@ -83,6 +92,36 @@ class YtChannel(models.Model):
     def get_admin_url(self):
         return reverse('admin:%s_%s_change' % (self._meta.app_label,
                        self._meta.model_name), args=[self.id])
+
+
+class VideoManager(models.Manager):
+
+    def auto_tag(self, videos=None):
+        if videos is None:
+            # @HACK: only for test and development. remove for poduction!
+            videos = self.all()
+
+        tags = Tag.objects.all()
+
+        for video in videos:
+            for tag in tags:
+                keywords = [tc.name.lower() for tc in tag.tagcontent_set.all()]
+                more_kws = [k.keyword.lower() for k in tag.tagkeyword_set.all()]
+                keywords.extend(more_kws)
+                tagged = False
+                for k in keywords:
+                    if k in video.title.lower():
+                        video.tags.add(tag)
+                        tagged = True
+                        print(f"added tag {tag} to {video}")
+                        break
+                if tagged:
+                    break
+                #print(keywords)
+
+
+
+
 
 
 class Video(models.Model):
@@ -99,6 +138,8 @@ class Video(models.Model):
                                null=True)
     language = models.CharField(max_length=3,
                                 choices=LANGUAGE_CHOICES, blank=False)
+
+    objects = VideoManager()
 
     def __str__(self):
         return f"{self.title}\n\t{self.published_at}"
@@ -141,6 +182,14 @@ class Video(models.Model):
 
     class Meta:
         ordering = ['-published_at', ]
+
+
+
+@receiver(post_save, sender=TagContent)
+def my_handler(sender, **kwargs):
+    print("auto tag ...")
+    # @TODO:
+    Video.objects.auto_tag()
 
 
 class YoutubeVideo(Video):
