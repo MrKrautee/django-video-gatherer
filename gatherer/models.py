@@ -96,14 +96,17 @@ class YtChannel(models.Model):
 
 class VideoManager(models.Manager):
 
-    def auto_tag(self, videos=None):
+    def auto_tag(self, videos=None, tag=None):
         if videos is None:
             # @HACK: only for test and development. remove for poduction!
             videos = self.all()
-
-        tags = Tag.objects.all()
+        if tag is None:
+            tags = Tag.objects.all()
+        else:
+            tags = [tag]
 
         for video in videos:
+            logger.info(f"checking {video}...")
             for tag in tags:
                 keywords = [tc.name.lower() for tc in tag.tagcontent_set.all()]
                 more_kws = [k.keyword.lower() for k in tag.tagkeyword_set.all()]
@@ -113,16 +116,12 @@ class VideoManager(models.Manager):
                     if k in video.title.lower():
                         video.tags.add(tag)
                         tagged = True
+                        logger.info(f"\t>>> <{tag}> added")
                         print(f"added tag {tag} to {video}")
                         break
                 if tagged:
                     break
-                #print(keywords)
-
-
-
-
-
+        logger.info(f"... auto tagging completed")
 
 class Video(models.Model):
 
@@ -183,13 +182,12 @@ class Video(models.Model):
     class Meta:
         ordering = ['-published_at', ]
 
-
-
-@receiver(post_save, sender=TagContent)
-def my_handler(sender, **kwargs):
-    print("auto tag ...")
-    # @TODO:
-    Video.objects.auto_tag()
+@receiver(post_save, sender=TagContent, dispatch_uid="call_me_once_only_12345")
+def tagContent_post_save(sender, instance, **kwargs):
+    """ auto tagging after adding new Tag """
+    # sender: TagContent
+    logger.info("starting auto tagging ...")
+    Video.objects.auto_tag(tag=instance.tag)
 
 
 class YoutubeVideo(Video):
