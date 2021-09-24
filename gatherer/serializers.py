@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from rest_framework import filters
+from django.conf import settings
 from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy 
@@ -97,6 +98,26 @@ class TranslatedGroupSerializer(serializers.ModelSerializer):
         model = Group
         fields = ['name', 'tags']
 
+    def _video_lang_filter(self):
+        # @TODO: duplicated code from views.py!!!
+        # video language
+        # user changed video lang
+        request = self.context['request']
+        if request.method == 'GET':
+            if request.GET.get('video_lang'):
+                video_lang = request.GET.get('video_lang')
+                request.session['video_lang'] = video_lang
+        # no video lang selected -> show all videos
+        if 'video_lang' not in request.session.keys():
+            request.session['video_lang'] = 'all'
+        # video lang saved 
+        session_vlang = request.session['video_lang']
+        if session_vlang and session_vlang != 'all':
+            language = [request.session['video_lang'],]
+        else: # all: show videos in all languages
+            language = [code for code,_ in settings.LANGUAGES]
+        return language
+
     def get_name(self, obj):
         try:
             return obj.name(self.context['request'].LANGUAGE_CODE)
@@ -110,8 +131,10 @@ class TranslatedGroupSerializer(serializers.ModelSerializer):
         except KeyError:
             lang_code = 'en'
 
+        video_lang = self._video_lang_filter()
         tags = Tag.objects.filter(group_id=obj.id, video__isnull=False)
         tags = tags.distinct()
+        tags = tags.filter(video__language__in=video_lang)
         tags = sorted(tags,
                       key = lambda tag: tag.name(lang_code))
         return TranslatedTagSerializer(tags, many=True,
