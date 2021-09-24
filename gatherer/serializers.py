@@ -1,8 +1,11 @@
 from rest_framework import serializers
+from rest_framework import filters
 from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy 
-from gatherer.models import Video, Tag, TagContent, YtChannel, FbSite
+from gatherer.models import Tag, TagContent
+from gatherer.models import Video, YtChannel, FbSite
+from gatherer.models import Group, GroupContent
 
 
 def truncate(text: str, chars_count: int) -> str:
@@ -63,9 +66,57 @@ class TranslatedTagSerializer(serializers.ModelSerializer):
         try:
             return obj.slug(self.context['request'].LANGUAGE_CODE)
         except KeyError:
+            print("glitch: no lang code")
             return obj.name('en') #@HACK
-        
 
+
+class GroupContentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = GroupContent
+        fields = ['language', 'name', 'description', 'id']
+        order_by = ['name', ]
+
+
+class GroupSerializer(serializers.ModelSerializer):
+
+    content = GroupContentSerializer(source='groupcontent_set',
+                                   many=True, read_only=True)
+
+    class Meta:
+        model = Group
+        fields = ['content']
+
+
+class TranslatedGroupSerializer(serializers.ModelSerializer):
+
+    name = serializers.SerializerMethodField()
+    tags = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Group
+        fields = ['name', 'tags']
+
+    @translate(self)
+    def get_name(self, obj):
+        try:
+            return obj.name(self.context['request'].LANGUAGE_CODE)
+        except KeyError:
+            print("glitch: no lang code")
+            return obj.name('en') #@HACK
+
+    def get_tags(self, obj):
+        try:
+            lang_code = self.context['request'].LANGUAGE_CODE
+        except KeyError:
+            lang_code = 'en'
+
+        tags = Tag.objects.filter(group_id=obj.id, video__isnull=False)
+        tags = tags.distinct()
+        tags = sorted(tags,
+                      key = lambda tag: tag.name(lang_code))
+        return TranslatedTagSerializer(tags, many=True,
+                                       context=self.context).data
 
 class YtChannelSerializer(serializers.ModelSerializer):
 

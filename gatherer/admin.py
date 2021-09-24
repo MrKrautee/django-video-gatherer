@@ -17,6 +17,8 @@ from django.conf import settings
 from facebook_video_scraper.views import VideoDetailsListView
 
 from gatherer.models import Video
+from gatherer.models import Group
+from gatherer.models import GroupContent
 from gatherer.models import Tag
 from gatherer.models import TagContent
 from gatherer.models import TagKeyword
@@ -307,6 +309,18 @@ class FbSiteAdmin(admin.ModelAdmin):
     search_fields = ('slug',)
     # readonly_fields = ('slug',)
 
+class GroupContentInline(admin.StackedInline):
+    model = GroupContent
+    extra = len(settings.LANGUAGES)
+
+class GroupContentAdmin(admin.ModelAdmin):
+    list_display = ('name', )
+    search_fields = ['name']
+
+class GroupAdmin(admin.ModelAdmin):
+    inlines = [GroupContentInline,]
+    search_fields = ['groupcontent_name',]
+
 class TagConentInline(admin.StackedInline):
     model = TagContent
     extra = len(settings.LANGUAGES)
@@ -315,6 +329,7 @@ class TagConentInline(admin.StackedInline):
 class TagAdmin(admin.ModelAdmin):
     inlines = [ TagConentInline, ]
     search_fields = ['tagcontent_name']
+    list_display = ( '__str__', 'group',)
 
 class TagKeywordAdmin(admin.ModelAdmin):
     list_display = ('keyword', 'tag')
@@ -360,6 +375,8 @@ class UpdateAdmin(admin.ModelAdmin):
     videos.short_description = "videos updated"
 
 
+admin.site.register(Group, GroupAdmin)
+admin.site.register(GroupContent, GroupContentAdmin)
 admin.site.register(TagKeyword, TagKeywordAdmin)
 admin.site.register(Video, VideoAdmin)
 admin.site.register(YtSearchPattern, YtSearchPatternAdmin)

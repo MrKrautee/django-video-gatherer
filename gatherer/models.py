@@ -26,7 +26,44 @@ DURATION_CHOICES = [
 ]
 
 
+class Group(models.Model):
+
+    def name(self, lang_code):
+        try:
+            group_content = self.groupcontent_set.get(language=lang_code)
+        except:  # TODO: catch specific Exception
+            group_content = self.groupcontent_set.get(
+                                        language=settings.LANGUAGE_CODE
+                        )
+        return group_content.name
+
+    def description(self, lang_code):
+        return 'not implemented'
+
+    def __str__(self):
+        group_content = self.groupcontent_set.filter(
+                            language=settings.LANGUAGE_CODE
+                      )[0]
+        return str(group_content)
+
+
+class GroupContent(models.Model):
+    language = models.CharField(max_length=3,
+                                choices=LANGUAGE_CHOICES,
+                                blank=False)
+    name = models.CharField(max_length=255, unique=True,
+                            verbose_name="tag name")
+    description = models.TextField(blank=True)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return "%s" % self.name
+
+    class Meta:
+        unique_together = ('group', 'language')
+
 class Tag(models.Model):
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, blank=True)
 
     def name(self, lang_code):
         try:
@@ -272,9 +309,9 @@ class YtSearchPattern(SearchPattern):
         )
         if self.event_type:
             search_params['event_type'] = EventType(self.event_type)
-        # @TODO: current not use:
-        # published_before=self.published_before,
-        # published_after=self.published_after
+        # @TODO: currently not used:
+        #           * published_before=self.published_before,
+        #           * published_after=self.published_after
         videos = youtube_finder.search_videos(content_details=True,
                 **search_params)
         with transaction.atomic():

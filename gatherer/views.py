@@ -9,10 +9,13 @@ from rest_framework.mixins import ListModelMixin
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.response import Response
 from rest_framework.renderers import TemplateHTMLRenderer, JSONRenderer
+from rest_framework import filters
 
 from gatherer.serializers import VideoSerializer, TranslatedTagSerializer
+from gatherer.serializers import TranslatedGroupSerializer
 from gatherer.models import Video
 from gatherer.models import Tag, TagContent
+from gatherer.models import Group, GroupContent
 
 from django.http import HttpResponse, HttpResponseRedirect
 import google.oauth2.credentials
@@ -166,10 +169,13 @@ class VideoListView(ListModelMixin, GenericViewSet):
             tags = sorted(tags,
                           key = lambda tag: tag.name(self.request.LANGUAGE_CODE))
 
+            groups = Group.objects.filter(tag__video__isnull=False).distinct()
+
             order_by = request.GET.get('order_by', '-published_at')
             page_nr = request.GET.get('page', 1)
 
             context = {
+                    'groups': groups,
                     'tags': tags,
                     'current_tag': tag,
                     'order_by': order_by,
@@ -201,27 +207,23 @@ def _video_lang_filter(request):
         language = [code for code,_ in settings.LANGUAGES]
     return language
 
-class TagListView(ListModelMixin, GenericViewSet):
+class GroupListView(ListModelMixin, GenericViewSet):
 
-    tag_set = Tag.objects.filter(video__isnull=False)
-    queryset = tag_set.distinct()
-    serializer_class = TranslatedTagSerializer
+    queryset = Group.objects.filter(tag__video__isnull=False).distinct()
+    serializer_class = TranslatedGroupSerializer
     pagination_class = None
 
     def get_queryset(self):
-        print("get queryset")
         video_lang = _video_lang_filter(self.request)
-        tags = self.queryset.filter(video__language__in=video_lang)
-        print(self.request.LANGUAGE_CODE)
-        tags = sorted(tags,
-                       key = lambda tag: tag.name(self.request.LANGUAGE_CODE))
-        print(tags)
+        groups = self.queryset.filter(tag__video__language__in=video_lang)
+        # groups = sorted(groups,
+        #                key = lambda group: group.name(self.request.LANGUAGE_CODE))
         # tags = tags.filter(tagcontent__language__in=video_lang)
-        return tags
+        return groups
 
     def get_serializer_context(self):
         return {
-            'lang_code': self.request.LANGUAGE_CODE, 
+            'lang_code': self.request.LANGUAGE_CODE,
             'request': self.request
         }
 
@@ -234,6 +236,30 @@ class TagListView(ListModelMixin, GenericViewSet):
     #     print(json_repsonse)
     #     json_repsonse.data = tags_sorted
     #     return json_repsonse
+
+class TagListView(ListModelMixin, GenericViewSet):
+
+    tag_set = Tag.objects.filter(video__isnull=False)
+    queryset = tag_set.distinct()
+    serializer_class = TranslatedTagSerializer
+    pagination_class = None
+
+
+    def get_queryset(self):
+        print("get queryset")
+        video_lang = _video_lang_filter(self.request)
+        tags = self.queryset.filter(video__language__in=video_lang)
+        print(self.request.LANGUAGE_CODE)
+   #      tags = sorted(tags,
+   #                     key = lambda tag: tag.name(self.request.LANGUAGE_CODE))
+        # tags = tags.filter(tagcontent__language__in=video_lang)
+        return tags
+
+    def get_serializer_context(self):
+        return {
+            'lang_code': self.request.LANGUAGE_CODE,
+            'request': self.request
+        }
 
 def videos_view(request):
 
