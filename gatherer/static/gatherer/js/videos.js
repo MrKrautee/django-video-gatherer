@@ -1,24 +1,33 @@
 (function($) {
     'use strict';
-    var tagTemplate = function(data){
+    var tagTemplate = function(groups){
         // var tagAllDiv = $('#tags .tag').first();
         var tagAllDiv = $("#tag-template").clone();
         tagAllDiv.css("display", "block");
         tagAllDiv.attr("id", "");
+        var groupLabel = $("#group-template").clone();
+        groupLabel.css("display", "block");
+        groupLabel.attr("id", "");
         var tagListHtml = []
-        console.log(data);
-        if(data){
-            data.forEach(function(tagData){
-                var tagDiv = tagAllDiv.clone(true);
-                var tagInput = tagDiv.find('input').first();
-                tagInput.prop('checked', false);
-                var tagLabel = tagDiv.find('label');
-                tagInput.attr("id", "tag-"+tagData.slug);
-                tagInput.attr("value", tagData.slug);
-                tagLabel.html(tagData.name);
-                tagLabel.attr('for', 'tag-'+tagData.slug);
-                tagListHtml.push(tagDiv);
-            });
+        console.log(groups);
+        if(groups){
+            groups.forEach(function(groupData){
+                var group = groupLabel.clone(true);
+                group.html(groupData.name);
+                tagListHtml.push(group);
+                groupData.tags.forEach(function(tagData){
+                    var tagDiv = tagAllDiv.clone(true);
+                    var tagInput = tagDiv.find('input').first();
+                    tagInput.prop('checked', false);
+                    var tagLabel = tagDiv.find('label');
+                    tagInput.attr("id", "tag-"+tagData.slug);
+                    tagInput.attr("value", tagData.slug);
+                    tagLabel.html(tagData.name);
+                    tagLabel.attr('for', 'tag-'+tagData.slug);
+                    tagListHtml.push(tagDiv);
+                });
+            })
+            
         }
         return tagListHtml;
     };

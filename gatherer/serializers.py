@@ -97,7 +97,6 @@ class TranslatedGroupSerializer(serializers.ModelSerializer):
         model = Group
         fields = ['name', 'tags']
 
-    @translate(self)
     def get_name(self, obj):
         try:
             return obj.name(self.context['request'].LANGUAGE_CODE)
