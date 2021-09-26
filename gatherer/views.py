@@ -151,6 +151,7 @@ class GroupListView(ListModelMixin, GenericViewSet):
     pagination_class = None
 
     def get_queryset(self):
+        print("view->get_queryset: start")
         video_lang = get_video_lang(self.request)
         groups = self.queryset.filter(tag__video__language__in=video_lang)
         return groups

@@ -9,28 +9,6 @@ from gatherer.models import Video, YtChannel, FbSite
 from gatherer.models import Group, GroupContent
 from gatherer.tools import get_video_lang
 
-
-def truncate(text: str, chars_count: int) -> str:
-    """ truncate text after chars_count, but cut
-        at the previous ocurrig blank.
-    """
-    if len(text) <= chars_count:
-        return text
-    idx_to_cut = None
-    if text[chars_count] == ' ':
-        idx_to_cut = chars_count
-    else:
-        for idx in range(chars_count, -1, -1):
-            if text[idx] == ' ':
-                idx_to_cut = idx
-                break
-        # no blank in text
-        if not idx_to_cut:
-            idx_to_cut = chars_count
-
-    return f"{text[0:idx_to_cut]} ..."
-
-
 class TagContentSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -99,26 +77,6 @@ class TranslatedGroupSerializer(serializers.ModelSerializer):
         model = Group
         fields = ['name', 'tags']
 
-    # def _video_lang_filter(self):
-    #     # @TODO: duplicated code from views.py!!!
-    #     # video language
-    #     # user changed video lang
-    #     request = self.context['request']
-    #     if request.method == 'GET':
-    #         if request.GET.get('video_lang'):
-    #             video_lang = request.GET.get('video_lang')
-    #             request.session['video_lang'] = video_lang
-    #     # no video lang selected -> show all videos
-    #     if 'video_lang' not in request.session.keys():
-    #         request.session['video_lang'] = 'all'
-    #     # video lang saved 
-    #     session_vlang = request.session['video_lang']
-    #     if session_vlang and session_vlang != 'all':
-    #         language = [request.session['video_lang'],]
-    #     else: # all: show videos in all languages
-    #         language = [code for code,_ in settings.LANGUAGES]
-    #     return language
-
     def get_name(self, obj):
         try:
             return obj.name(self.context['request'].LANGUAGE_CODE)
@@ -132,11 +90,12 @@ class TranslatedGroupSerializer(serializers.ModelSerializer):
         except KeyError:
             lang_code = 'en'
 
+        print("serializers->get_tags: start")
         video_lang = get_video_lang(self.context['request'])
         tags = Tag.objects.filter(group_id=obj.id, video__isnull=False)
         tags = tags.distinct()
         tags = tags.filter(video__language__in=video_lang)
-        # tags = tags.filter(video__is_active = True)
+        tags = tags.filter(video__is_active = True)
         tags = sorted(tags,
                       key = lambda tag: tag.name(lang_code))
         return TranslatedTagSerializer(tags, many=True,
@@ -168,7 +127,6 @@ class VideoSerializer(serializers.ModelSerializer):
 
     publisher = serializers.SerializerMethodField()
     tags = TranslatedTagSerializer(many=True, read_only=True)
-    # tags = TagSerializer(many=True, read_only=True)
     title = serializers.SerializerMethodField()
     description = serializers.SerializerMethodField()
     published_at = serializers.SerializerMethodField()
@@ -182,14 +140,13 @@ class VideoSerializer(serializers.ModelSerializer):
                   'tags', 'language', 'link', 'publisher', 'type']
 
     def get_title(self, obj):
-        # return truncate(obj.title, 85)
         return obj.title
 
     def get_description(self, obj):
         return obj.description
 
     def get_publisher(self, obj):
-        return truncate(str(obj.publisher), 35)
+        return str(obj.publisher)
 
     def get_published_at(self, obj):
         return _("%s ago") % timesince(obj.published_at,

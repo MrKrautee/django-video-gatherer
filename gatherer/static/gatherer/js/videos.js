@@ -9,7 +9,7 @@
         groupLabel.css("display", "block");
         groupLabel.attr("id", "");
         var tagListHtml = []
-        console.log(groups);
+        // console.log(groups);
         if(groups){
             groups.forEach(function(groupData){
                 var group = groupLabel.clone(true);
@@ -56,7 +56,7 @@
             if (video.description.length > 350) {
                 d +=" ...";
             }
-            console.log(d);
+            // console.log(d);
             videoDescription.html(d);
             // published_at
             var videoPublishedAt = newVideoDiv.find(".published-at").first();
@@ -148,7 +148,7 @@
         };
         this.getVideos = function(url, fnStr){
             return $.get(url, function(data){
-                console.log(data);
+                // console.log(data);
                 var videoHtml = videoTemplate(data);
                 $("#content-body")[fnStr](videoHtml);
             }, "json");
@@ -205,6 +205,7 @@
             $("#tags").html("");
             $('#spinner-tags').show();
             
+            
             var tags_url = getTemplateParam("tags_ajax_url");
             var url = tags_url + '?' +  $.param(state.params, true);
             var THIS = this;
@@ -215,15 +216,15 @@
                 $("#tags input").each(function(){
                     $(this).change(function(e){
                         if(this.checked){
-                            console.log("check");
+                            // console.log("check");
                             // if(this.value != 'all'){
                             //     $('#tags input#tag-all:checked').prop('checked', false);
                             // }
                             THIS.addTag(this.value);
-                            console.log('add tag '+this.value);
+                            // console.log('add tag '+this.value);
                             e.preventDefault();
                         }else{
-                            console.log("uncheck");
+                            // console.log("uncheck");
                             THIS.delTag(this.value);
                             e.preventDefault();
                         }
@@ -236,7 +237,7 @@
                     // remove tags from state which are not in tag list.
                     state.params.tags.forEach( (tagSlug, idx) => {
                         if( data.filter((tag) => tag.slug === tagSlug).length === 1){
-                            console.log(tagSlug + " in tags");
+                            // console.log(tagSlug + " in tags");
                             newTags.push(tagSlug);
                         }
                     });
@@ -248,6 +249,8 @@
             this.resetPagination();
             state.params.tags.push(tagSlug);
             this.toHistory();
+            $("#spinner").show();
+            $("#content-body").html("");
             return this.load();
         }
         this.delTag = function(tagSlug){
@@ -256,17 +259,23 @@
             if (idx > -1) { state.params.tags.splice(idx, 1);};
             
             this.toHistory();
+            $("#spinner").show();
+            $("#content-body").html("");
             return this.load();
         };
         this.changeOrder = function(orderBy){
             state.params.order_by = orderBy;
             this.resetPagination();
             this.toHistory();
+            $("#spinner").show();
+            $("#content-body").html("");
             return this.load();
         };
         this.changeLang = function(lang){
             state.params.video_lang = lang;
             // ?return 
+            $("#spinner").show();
+            $("#content-body").html("");
             this.updateTags().done(() => {
                 this.resetPagination();
                 this.toHistory();
@@ -301,32 +310,7 @@
 	$( document ).ready(function() {
         page.load();
         page.updateTags();
-        // load content 
-		//var initLoad = page.load();
-		
-		// $('#language').change(function(){
-        //     $(this).parents("form").submit();
-		// });
-		// $('#spinner').css("display", "block");
-		// tags
-		$("#tags input").each(function(){
-			$(this).change(function(e){
-                if(this.checked){
-                    console.log("check");
-                    // if(this.value != 'all'){
-                    //     $('#tags input#tag-all:checked').prop('checked', false);
-                    // }
-                    page.addTag(this.value);
-                    console.log('add tag '+this.value);
-                    e.preventDefault();
-                }else{
-                    console.log("uncheck");
-                    page.delTag(this.value);
-                    e.preventDefault();
-                }
-
-			});
-		});
+    
 		$('#filter').change(function(){
 			if($(this).val() != ""){
                 page.changeOrder($(this).val());
