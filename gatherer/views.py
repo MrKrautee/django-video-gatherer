@@ -91,7 +91,7 @@ def google_callback(request):
 
 
 class VideoListView(ListModelMixin, GenericViewSet):
-    queryset = Video.objects.all()
+    queryset = Video.objects.filter(is_active=True)
     serializer_class = VideoSerializer
     renderer_classes = [TemplateHTMLRenderer, JSONRenderer]
     template_name = "gatherer/videos.html"
@@ -103,12 +103,12 @@ class VideoListView(ListModelMixin, GenericViewSet):
             order_by = self.request.GET.get('order_by') 
         if 'tag' in self.kwargs.keys():
             tag = self.kwargs['tag']
-            qs = Video.objects.filter(tags__tagcontent__slug=tag,
+            qs = self.queryset.filter(tags__tagcontent__slug=tag,
                     language__in=lang_filter).order_by(order_by)
         elif self.request.GET.get('tags'):
             tags = self.request.GET.getlist('tags')
             # get videos with one of the given tags
-            qs = Video.objects.filter(tags__tagcontent__slug__in=tags,
+            qs = self.queryset.filter(tags__tagcontent__slug__in=tags,
                     language__in=lang_filter).distinct().order_by(order_by)
 
             # get only videos with all given tags
@@ -116,17 +116,13 @@ class VideoListView(ListModelMixin, GenericViewSet):
             tag_query = tag_queries.pop()
             for q in tag_queries:
                 tag_query |= q
-
             qs = qs.exclude(tag_query)
         else:
-            qs = Video.objects.filter(language__in=lang_filter).order_by(order_by)
-            # print(qs)
+            qs = self.queryset.filter(language__in=lang_filter).order_by(order_by)
         return qs
 
     def list(self, request, **kwargs):
-        # kwargs["lang_code"] = self.request.LANGUAGE_CODE
         json_repsonse = super().list(request, **kwargs)
-        # print(json_repsonse)
         if request.accepted_renderer.format == 'html':
             order_options = {
                     "-published_at": "Datum ab",
@@ -134,29 +130,9 @@ class VideoListView(ListModelMixin, GenericViewSet):
                     "-duration": "Dauer ab",
                     "duration": "Dauer auf",
             }
-
-            tag = kwargs['tag'] if 'tag' in kwargs.keys() else 'all'
-            # !TODO: check for language and redirect to tag slug in the 
-            #        right language.
-            tags = Tag.objects.filter(video__isnull=False).distinct()
-            tags = tags.filter(video__language__in=get_video_lang(request))
-            # tags = tags.filter(tagcontent__language=self.request.LANGUAGE_CODE)
-            # tags = tags.order_by('tagcontent__name').distinct()
-
-            # needed to use fallback to default language, if tag name in 
-            # selected language does not exist.
-            tags = sorted(tags,
-                          key = lambda tag: tag.name(self.request.LANGUAGE_CODE))
-
-            groups = Group.objects.filter(tag__video__isnull=False).distinct()
-
             order_by = request.GET.get('order_by', '-published_at')
             page_nr = request.GET.get('page', 1)
-
             context = {
-                    'groups': groups,
-                    'tags': tags,
-                    'current_tag': tag,
                     'order_by': order_by,
                     'page_nr': page_nr,
                     'order_options': order_options,
@@ -169,7 +145,8 @@ class VideoListView(ListModelMixin, GenericViewSet):
 
 class GroupListView(ListModelMixin, GenericViewSet):
 
-    queryset = Group.objects.filter(tag__video__isnull=False).distinct()
+    queryset = Group.objects.filter(tag__video__isnull=False,
+                                    tag__video__is_active=True).distinct()
     serializer_class = TranslatedGroupSerializer
     pagination_class = None
 
@@ -183,6 +160,9 @@ class GroupListView(ListModelMixin, GenericViewSet):
             'lang_code': self.request.LANGUAGE_CODE,
             'request': self.request
         }
+
+
+# --- UNUSED ------------------
 
 class TagListView(ListModelMixin, GenericViewSet):
 

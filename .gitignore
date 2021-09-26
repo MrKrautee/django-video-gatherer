@@ -68,7 +68,6 @@ media/
 .env
 
 venv_bootcamp/
-staticfiles
 tags
 .directory
 index-tags.sh
