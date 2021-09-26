@@ -7,6 +7,7 @@ from django.utils.translation import ngettext_lazy
 from gatherer.models import Tag, TagContent
 from gatherer.models import Video, YtChannel, FbSite
 from gatherer.models import Group, GroupContent
+from gatherer.tools import get_video_lang
 
 
 def truncate(text: str, chars_count: int) -> str:
@@ -98,25 +99,25 @@ class TranslatedGroupSerializer(serializers.ModelSerializer):
         model = Group
         fields = ['name', 'tags']
 
-    def _video_lang_filter(self):
-        # @TODO: duplicated code from views.py!!!
-        # video language
-        # user changed video lang
-        request = self.context['request']
-        if request.method == 'GET':
-            if request.GET.get('video_lang'):
-                video_lang = request.GET.get('video_lang')
-                request.session['video_lang'] = video_lang
-        # no video lang selected -> show all videos
-        if 'video_lang' not in request.session.keys():
-            request.session['video_lang'] = 'all'
-        # video lang saved 
-        session_vlang = request.session['video_lang']
-        if session_vlang and session_vlang != 'all':
-            language = [request.session['video_lang'],]
-        else: # all: show videos in all languages
-            language = [code for code,_ in settings.LANGUAGES]
-        return language
+    # def _video_lang_filter(self):
+    #     # @TODO: duplicated code from views.py!!!
+    #     # video language
+    #     # user changed video lang
+    #     request = self.context['request']
+    #     if request.method == 'GET':
+    #         if request.GET.get('video_lang'):
+    #             video_lang = request.GET.get('video_lang')
+    #             request.session['video_lang'] = video_lang
+    #     # no video lang selected -> show all videos
+    #     if 'video_lang' not in request.session.keys():
+    #         request.session['video_lang'] = 'all'
+    #     # video lang saved 
+    #     session_vlang = request.session['video_lang']
+    #     if session_vlang and session_vlang != 'all':
+    #         language = [request.session['video_lang'],]
+    #     else: # all: show videos in all languages
+    #         language = [code for code,_ in settings.LANGUAGES]
+    #     return language
 
     def get_name(self, obj):
         try:
@@ -131,10 +132,11 @@ class TranslatedGroupSerializer(serializers.ModelSerializer):
         except KeyError:
             lang_code = 'en'
 
-        video_lang = self._video_lang_filter()
+        video_lang = get_video_lang(self.context['request'])
         tags = Tag.objects.filter(group_id=obj.id, video__isnull=False)
         tags = tags.distinct()
         tags = tags.filter(video__language__in=video_lang)
+        # tags = tags.filter(video__is_active = True)
         tags = sorted(tags,
                       key = lambda tag: tag.name(lang_code))
         return TranslatedTagSerializer(tags, many=True,
@@ -180,10 +182,11 @@ class VideoSerializer(serializers.ModelSerializer):
                   'tags', 'language', 'link', 'publisher', 'type']
 
     def get_title(self, obj):
-        return truncate(obj.title, 85)
+        # return truncate(obj.title, 85)
+        return obj.title
 
     def get_description(self, obj):
-        return truncate(obj.description, 240)
+        return obj.description
 
     def get_publisher(self, obj):
         return truncate(str(obj.publisher), 35)

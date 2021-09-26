@@ -52,7 +52,12 @@
             videoDuration.html(video.duration);
             // description
             var videoDescription = newVideoDiv.find(".description").first();
-            videoDescription.html(video.description);
+            var d = video.description.replace(/^([\s\S]{350}[^\s]*)[\s\S]*/, "$1");
+            if (video.description.length > 350) {
+                d +=" ...";
+            }
+            console.log(d);
+            videoDescription.html(d);
             // published_at
             var videoPublishedAt = newVideoDiv.find(".published-at").first();
             videoPublishedAt.html(video.published_at);
@@ -69,7 +74,9 @@
                 tags_str += el.name + " | ";
             });
             videoTags.html(tags_str.substring(0, tags_str.length-3));
-            
+            if(tags_str.length === 0){
+                newVideoDiv.find(".meta-sep-tag").first().hide();
+            }
             // insert video
             videoListHtml.push(newVideoDiv);
         });
@@ -195,12 +202,16 @@
             );
         };
         this.updateTags = function(){
+            $("#tags").html("");
+            $('#spinner-tags').show();
+            
             var tags_url = getTemplateParam("tags_ajax_url");
             var url = tags_url + '?' +  $.param(state.params, true);
             var THIS = this;
             return $.get(url, function(data){
                 var tagListHtml = tagTemplate(data);
                 $("#tags").html(tagListHtml);
+                // connect events
                 $("#tags input").each(function(){
                     $(this).change(function(e){
                         if(this.checked){
@@ -230,6 +241,7 @@
                         }
                     });
                     state.params.tags = newTags;
+                    $('#spinner-tags').hide();
             });
         };
         this.addTag = function(tagSlug){
@@ -287,6 +299,8 @@
         page.load();
     });		
 	$( document ).ready(function() {
+        page.load();
+        page.updateTags();
         // load content 
 		//var initLoad = page.load();
 		

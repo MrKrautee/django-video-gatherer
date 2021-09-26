@@ -131,6 +131,7 @@ class YtChannel(models.Model):
                        self._meta.model_name), args=[self.id])
 
 
+import unicodedata
 class VideoManager(models.Manager):
 
     def auto_tag(self, videos=None, tag=None):
@@ -141,24 +142,25 @@ class VideoManager(models.Manager):
             tags = Tag.objects.all()
         else:
             tags = [tag]
-
+        print(tags)
         for video in videos:
             logger.info(f"checking {video}...")
             for tag in tags:
                 keywords = [tc.name.lower() for tc in tag.tagcontent_set.all()]
                 more_kws = [k.keyword.lower() for k in tag.tagkeyword_set.all()]
                 keywords.extend(more_kws)
-                tagged = False
                 for k in keywords:
-                    if k in video.title.lower():
+                    k_norm = unicodedata.normalize('NFC', k.lower())
+                    video_title_norm = unicodedata.normalize('NFC', video.title.lower())
+                    if k_norm in video_title_norm:
                         video.tags.add(tag)
-                        tagged = True
                         logger.info(f"\t>>> <{tag}> added")
                         print(f"added tag {tag} to {video}")
                         break
-                if tagged:
-                    break
         logger.info(f"... auto tagging completed")
+
+    def active(self):
+        return self.filter(is_active=True)
 
 class Video(models.Model):
 
@@ -218,6 +220,10 @@ class Video(models.Model):
 
     class Meta:
         ordering = ['-published_at', ]
+
+def test_tagging():
+    vlist = Video.objects.filter(id=1034)
+    Video.objects.auto_tag(videos=vlist)
 
 @receiver(post_save, sender=TagContent, dispatch_uid="call_me_once_only_12345")
 def tagContent_post_save(sender, instance, **kwargs):
