@@ -71,3 +71,5 @@ venv_bootcamp/
 tags
 .directory
 index-tags.sh
+.request_cache*
+.fb_video_cache*

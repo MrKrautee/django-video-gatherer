@@ -30,6 +30,7 @@ def get_video_lang(request):
     string
         language code - ie: 'de'
     """
+    print("get_video_lang")
     # video language
     # user changed video lang
     if request.method == 'GET':

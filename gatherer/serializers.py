@@ -1,3 +1,4 @@
+import logging
 from rest_framework import serializers
 from rest_framework import filters
 from django.conf import settings
@@ -9,6 +10,7 @@ from gatherer.models import Video, YtChannel, FbSite
 from gatherer.models import Group, GroupContent
 from gatherer.tools import get_video_lang
 
+_logger = logging.getLogger(__name__)
 class TagContentSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -39,14 +41,14 @@ class TranslatedTagSerializer(serializers.ModelSerializer):
         try:
             return obj.name(self.context['request'].LANGUAGE_CODE)
         except KeyError:
-            print("glitch: no lang code")
+            _logger.error("glitch: no lang code")
             return obj.name('en') #@HACK
 
     def get_slug(self, obj):
         try:
             return obj.slug(self.context['request'].LANGUAGE_CODE)
         except KeyError:
-            print("glitch: no lang code")
+            _logger.error("glitch: no lang code")
             return obj.name('en') #@HACK
 
 
@@ -81,7 +83,7 @@ class TranslatedGroupSerializer(serializers.ModelSerializer):
         try:
             return obj.name(self.context['request'].LANGUAGE_CODE)
         except KeyError:
-            print("glitch: no lang code")
+            _logger.error("glitch: no lang code")
             return obj.name('en') #@HACK
 
     def get_tags(self, obj):
@@ -90,12 +92,15 @@ class TranslatedGroupSerializer(serializers.ModelSerializer):
         except KeyError:
             lang_code = 'en'
 
-        print("serializers->get_tags: start")
-        video_lang = get_video_lang(self.context['request'])
-        tags = Tag.objects.filter(group_id=obj.id, video__isnull=False)
+        video_lang = self.context['video_lang']
+        tag_filter = {
+            'group_id': obj.id,
+            'video__isnull': False,
+            'video__language__in': video_lang,
+            'video__is_active': True
+        }
+        tags = Tag.objects.filter(**tag_filter)
         tags = tags.distinct()
-        tags = tags.filter(video__language__in=video_lang)
-        tags = tags.filter(video__is_active = True)
         tags = sorted(tags,
                       key = lambda tag: tag.name(lang_code))
         return TranslatedTagSerializer(tags, many=True,

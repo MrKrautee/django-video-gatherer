@@ -25,11 +25,100 @@ import google_auth_oauthlib.flow
 CLIENT_SECRETS_FILE = '/home/kraut/Downloads/client_secret.json'
 SCOPES = ['https://www.googleapis.com/auth/youtube.readonly']
 
-# @TODO: DEV ONLY
+class VideoListView(ListModelMixin, GenericViewSet):
+    queryset = Video.objects
+    serializer_class = VideoSerializer
+    renderer_classes = [TemplateHTMLRenderer, JSONRenderer]
+    template_name = "gatherer/videos.html"
+
+    def get_queryset(self):
+        if self.request.GET.get('order_by'):
+            order_by = self.request.GET.get('order_by')
+        else:
+            order_by = "-published_at"
+        lang_filter = get_video_lang(self.request)
+        video_filter = {
+            "is_active": True,
+            'language__in': lang_filter,
+        }
+        # one tag
+        if 'tag' in self.kwargs.keys():
+            tag = self.kwargs['tag']
+            video_filter.update({
+                'tags__tagcontent__slug':tag,
+            })    
+        # more than one tag
+        elif self.request.GET.get('tags'):
+            tags = self.request.GET.getlist('tags')
+            # get videos with one of the given tags
+            video_filter.update({
+                'tags__tagcontent__slug__in':tags,
+            })
+            # get only videos with all given tags
+            tag_queries = [~Q(tags__tagcontent__slug=tag) for tag in tags]
+            tag_query = tag_queries.pop()
+            for q in tag_queries:
+                tag_query |= q
+            return self.queryset.filter(**video_filter).exclude(tag_query).order_by(order_by).distinct()
+
+        return self.queryset.filter(**video_filter).order_by(order_by).distinct()
+
+    def list(self, request, **kwargs):
+        json_repsonse = super().list(request, **kwargs)
+        if request.accepted_renderer.format == 'html':
+            order_options = {
+                    "-published_at": "Datum ab",
+                    "published_at": "Datum auf",
+                    "-duration": "Dauer ab",
+                    "duration": "Dauer auf",
+            }
+            order_by = request.GET.get('order_by', '-published_at')
+            page_nr = request.GET.get('page', 1)
+            context = {
+                    'order_by': order_by,
+                    'page_nr': page_nr,
+                    'order_options': order_options,
+                    'video_lang': request.session.get('video_lang'),
+                    'data': json_repsonse.data,
+            }
+            return Response(context)
+        else:
+            return json_repsonse
+
+    def get_serializer_context(self):
+        return {
+            'video_lang': get_video_lang(self.request),
+            'lang_code': self.request.LANGUAGE_CODE,
+            'request': self.request
+        }
+
+class GroupListView(ListModelMixin, GenericViewSet):
+
+    queryset = Group.objects
+    serializer_class = TranslatedGroupSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        video_lang = get_video_lang(self.request)
+        group_filter = {
+            'tag__video__language__in': video_lang,
+            'tag__video__isnull': False,
+            'tag__video__is_active': True
+        }
+        return self.queryset.filter(**group_filter).distinct()
+
+    def get_serializer_context(self):
+        return {
+            'video_lang': get_video_lang(self.request),
+            'lang_code': self.request.LANGUAGE_CODE,
+            'request': self.request
+        }
+
+
+# @TODO: DEV ONLY Google Auth
 import os 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 # <-- WARNING: development mode only
-
 def credentials_to_dict(credentials):
   return {'token': credentials.token,
           'refresh_token': credentials.refresh_token,
@@ -88,79 +177,6 @@ def google_callback(request):
     context = {'credentials': credentials,
                 'state': state}
     return render(request, "gatherer/test_google.html", context)
-
-
-class VideoListView(ListModelMixin, GenericViewSet):
-    queryset = Video.objects.filter(is_active=True)
-    serializer_class = VideoSerializer
-    renderer_classes = [TemplateHTMLRenderer, JSONRenderer]
-    template_name = "gatherer/videos.html"
-
-    def get_queryset(self):
-        lang_filter = get_video_lang(self.request)
-        order_by = "-published_at"
-        if self.request.GET.get('order_by'):
-            order_by = self.request.GET.get('order_by') 
-        if 'tag' in self.kwargs.keys():
-            tag = self.kwargs['tag']
-            qs = self.queryset.filter(tags__tagcontent__slug=tag,
-                    language__in=lang_filter).order_by(order_by)
-        elif self.request.GET.get('tags'):
-            tags = self.request.GET.getlist('tags')
-            # get videos with one of the given tags
-            qs = self.queryset.filter(tags__tagcontent__slug__in=tags,
-                    language__in=lang_filter).distinct().order_by(order_by)
-
-            # get only videos with all given tags
-            tag_queries = [ ~Q(tags__tagcontent__slug=tag) for tag in tags]
-            tag_query = tag_queries.pop()
-            for q in tag_queries:
-                tag_query |= q
-            qs = qs.exclude(tag_query)
-        else:
-            qs = self.queryset.filter(language__in=lang_filter).order_by(order_by)
-        return qs
-
-    def list(self, request, **kwargs):
-        json_repsonse = super().list(request, **kwargs)
-        if request.accepted_renderer.format == 'html':
-            order_options = {
-                    "-published_at": "Datum ab",
-                    "published_at": "Datum auf",
-                    "-duration": "Dauer ab",
-                    "duration": "Dauer auf",
-            }
-            order_by = request.GET.get('order_by', '-published_at')
-            page_nr = request.GET.get('page', 1)
-            context = {
-                    'order_by': order_by,
-                    'page_nr': page_nr,
-                    'order_options': order_options,
-                    'video_lang': request.session.get('video_lang'),
-                    'data': json_repsonse.data,
-            }
-            return Response(context)
-        else:
-            return json_repsonse
-
-class GroupListView(ListModelMixin, GenericViewSet):
-
-    queryset = Group.objects.filter(tag__video__isnull=False,
-                                    tag__video__is_active=True).distinct()
-    serializer_class = TranslatedGroupSerializer
-    pagination_class = None
-
-    def get_queryset(self):
-        print("view->get_queryset: start")
-        video_lang = get_video_lang(self.request)
-        groups = self.queryset.filter(tag__video__language__in=video_lang)
-        return groups
-
-    def get_serializer_context(self):
-        return {
-            'lang_code': self.request.LANGUAGE_CODE,
-            'request': self.request
-        }
 
 
 # --- UNUSED ------------------

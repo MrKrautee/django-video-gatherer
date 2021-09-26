@@ -204,8 +204,7 @@
         this.updateTags = function(){
             $("#tags").html("");
             $('#spinner-tags').show();
-            
-            
+
             var tags_url = getTemplateParam("tags_ajax_url");
             var url = tags_url + '?' +  $.param(state.params, true);
             var THIS = this;
