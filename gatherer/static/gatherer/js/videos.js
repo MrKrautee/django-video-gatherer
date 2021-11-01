@@ -98,7 +98,43 @@
         return JSON.parse(document.getElementById(elementId).textContent);
     }
 
-    var VideoPage = function (){
+    /**
+     * Creates an object from URL encoded data
+     */
+    const getUrlParams = (url) => {
+        var params = [];
+        if(url.search('\\?') > -1){
+            var paramsStr = url.split('?')[1];
+            var paramsStrList = paramsStr.split('&');
+            paramsStrList.forEach((el) => {
+                var keyValue = el.split("=");
+                var key = keyValue[0];
+                if(Object.keys(params).includes(key)){
+                    // create array for same query params
+                    if(typeof params[key] == 'string'){
+                        var first = params[key];
+                        params[key] = [first, ];
+                    }
+                    params[key].push(keyValue[1]);
+                }else{
+                    params[key] = keyValue[1];
+                } 
+            });
+        }
+        return params;
+    }
+
+    var VideoPage = function (full_url){
+
+        var queryParams = getUrlParams(window.location.href);
+        var queryTags = [];
+        if(Object.keys(queryParams).includes('tags')){
+            if(typeof queryParams['tags'] == 'string'){
+                queryTags = [queryParams['tags'], ];
+            }else{
+                queryTags = queryParams['tags'];
+            } 
+        }
 
         var state = {
             pagination: {
@@ -110,7 +146,7 @@
                 order_by: getTemplateParam('order_by'),
                 video_lang: getTemplateParam('initial_video_lang'),
                 page: getTemplateParam('page_nr'),
-                tags: [],
+                tags: queryTags,
             },
             baseUrl: location.protocol + '//' + location.host + location.pathname,
             pageTitle: page_title,
@@ -124,13 +160,20 @@
             return state;
         };
         this.load = function(){
-            // console.log(state.params.tags);
-            window. scrollTo(0,0);
+            window. scrollTo(0,0); // Why?
             // hiCurrTag($("#"+state.tagId));
-            return this.loadVideos(this.fullUrl());
+            var spinner = $("#spinner")
+            spinner.show();
+            $("#content-body").html("");
+            return this.getVideos(this.fullUrl(), "html").done(function(data){
+                state.pagination.next = data.next;
+                state.pagination.previous = data.previous;
+                $("#result-count").html(data.count);
+                spinner.hide();
+            });
         };
         this.fullUrl = function(){
-            var url = state.baseUrl + "?" + $.param(state.params, true);
+            var url = state.baseUrl + "rest/videos/?" + $.param(state.params, true);
             return url;
         };
         this.resetPagination = function(){
@@ -147,40 +190,35 @@
             history.pushState(state, state.pageTitle, state.baseUrl);
         };
         this.getVideos = function(url, fnStr){
+        /**
+         * get video data and put it into html.
+         * @param: url - string url to videolist endpoint
+         * @param: fnStr - how to insert the data. ie: 'append' or 'html'
+         */
             return $.get(url, function(data){
-                // console.log(data);
                 var videoHtml = videoTemplate(data);
                 $("#content-body")[fnStr](videoHtml);
             }, "json");
         };
 
 
-        
-        //replace content body
-        this.loadVideos = function(url){
-            var spinner = $("#spinner")
-            spinner.show();
-            // $("#content-body").html("");
-            return this.getVideos(url, "html").done(function(data){
-                state.pagination.next = data.next;
-                state.pagination.previous = data.previous;
-                $("#result-count").html(data.count);
-                spinner.hide();
-            });
-        };
-
         //append content body
         this.loadNextVideos = function(){
+            state.params.page += 1;
+            
             var spinner = $("#spinner")
             spinner.show();
+            
             return this.getVideos(state.pagination.next,
                                   "append").done(function(data){
                 state.pagination.next = data.next;
+                $("#page-nr-user").html(state.params.page+"/"+data.pages);
                 spinner.hide();
             });
         };
         //prepend content body
         this.loadPrevVideos = function(){
+            state.params.page -= 1;
             var spinner = $("#spinner-top");
             spinner.show();
             return this.getVideos(state.pagination.previous,
@@ -215,15 +253,9 @@
                 $("#tags input").each(function(){
                     $(this).change(function(e){
                         if(this.checked){
-                            // console.log("check");
-                            // if(this.value != 'all'){
-                            //     $('#tags input#tag-all:checked').prop('checked', false);
-                            // }
                             THIS.addTag(this.value);
-                            // console.log('add tag '+this.value);
                             e.preventDefault();
                         }else{
-                            // console.log("uncheck");
                             THIS.delTag(this.value);
                             e.preventDefault();
                         }
@@ -236,7 +268,6 @@
                     // remove tags from state which are not in tag list.
                     state.params.tags.forEach( (tagSlug, idx) => {
                         if( data.filter((tag) => tag.slug === tagSlug).length === 1){
-                            // console.log(tagSlug + " in tags");
                             newTags.push(tagSlug);
                         }
                     });
@@ -248,8 +279,6 @@
             this.resetPagination();
             state.params.tags.push(tagSlug);
             this.toHistory();
-            $("#spinner").show();
-            $("#content-body").html("");
             return this.load();
         }
         this.delTag = function(tagSlug){
@@ -258,16 +287,12 @@
             if (idx > -1) { state.params.tags.splice(idx, 1);};
             
             this.toHistory();
-            $("#spinner").show();
-            $("#content-body").html("");
             return this.load();
         };
         this.changeOrder = function(orderBy){
             state.params.order_by = orderBy;
             this.resetPagination();
             this.toHistory();
-            $("#spinner").show();
-            $("#content-body").html("");
             return this.load();
         };
         this.changeLang = function(lang){
@@ -307,8 +332,7 @@
         page.load();
     });		
 	$( document ).ready(function() {
-        page.load();
-        page.updateTags();
+
     
 		$('#filter').change(function(){
 			if($(this).val() != ""){
@@ -320,24 +344,31 @@
                 page.changeLang($(this).val());
 			}
 		});
+       
+        
         // load specific page
 		// remove page param from url
         var state = page.getState();
-		history.replaceState(state, "Yoga Videos ", state.baseUrl);
-		// initLoad.done(function() {
-			if (page.previous() != null){
-				var prevLink = $('#load-previous');
-				prevLink.attr("href", page.previous());
-				prevLink.show();
-				prevLink.click(function(e) {
-					page.loadPrevVideos().done(function(){
-						if(page.previous() == null){
-							prevLink.hide();
-						};	
-					});
-					e.preventDefault();
-				});
-			};
-		// });
+        console.log(window.location.href);
+        console.log(getUrlParams(window.location.href));
+		// history.replaceState(state, "Yoga Videos ", state.baseUrl);
+        page.load().done(function(data){
+            console.log("prev: "+page.previous())
+            if (page.previous() != null && page.previous()!= ""){
+                var prevLink = $('#load-previous');
+                prevLink.attr("href", page.previous());
+                prevLink.css("display", "block");
+                prevLink.click(function(e) {
+                    page.loadPrevVideos().done(function(){
+                        if(page.previous() == null){
+                            prevLink.hide();
+                        };	
+                    });
+                    e.preventDefault();
+                });
+            };
+
+        });
+        page.updateTags();
 	});
 })(jQuery);

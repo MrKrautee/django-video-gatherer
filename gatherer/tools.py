@@ -30,12 +30,12 @@ def get_video_lang(request):
     string
         language code - ie: 'de'
     """
-    print("get_video_lang")
+    # print("get_video_lang")
     # video language
     # user changed video lang
     if request.method == 'GET':
-        if request.GET.get('video_lang'):
-            video_lang = request.GET.get('video_lang')
+        if request.GET.getlist('video_lang'):
+            video_lang = request.GET.getlist('video_lang')
             request.session['video_lang'] = video_lang
     # no video lang selected -> show all videos
     if 'video_lang' not in request.session.keys():
@@ -43,7 +43,7 @@ def get_video_lang(request):
     # video lang saved 
     session_vlang = request.session['video_lang']
     if session_vlang and session_vlang != 'all':
-        language = [request.session['video_lang'],]
+        language = request.session['video_lang']
     else: # all: show videos in all languages
         language = [code for code,_ in settings.LANGUAGES]
     return language

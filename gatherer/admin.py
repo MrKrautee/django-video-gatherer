@@ -14,7 +14,7 @@ from django.forms import modelformset_factory
 from django.contrib.sessions.models import Session
 from django.conf import settings
 
-from facebook_video_scraper.views import VideoDetailsListView
+# from facebook_video_scraper.views import VideoDetailsListView
 
 from gatherer.models import Video
 from gatherer.models import Group
@@ -23,7 +23,7 @@ from gatherer.models import Tag
 from gatherer.models import TagContent
 from gatherer.models import TagKeyword
 from gatherer.models import YtSearchPattern
-from gatherer.models import FbSearchPattern
+# from gatherer.models import FbSearchPattern
 from gatherer.models import YtChannel
 from gatherer.models import FbSite
 from gatherer.models import Update
@@ -80,7 +80,7 @@ class VideoTypeListFilter(admin.SimpleListFilter):
 	# Anna Kalhammer	UCjhJ5nFbhwpyGlnnavCwQnA
 class VideoAdmin(admin.ModelAdmin):
     list_display = ('is_active', 'title', 'short_description', 'tags_list',
-        'duration', 'published_at', 'update')
+        'duration', 'published_at', 'update', 'publisher')
     list_display_links = ('title', )
     list_per_page=300
     search_fields = ('title', ) #'description'
@@ -247,67 +247,67 @@ class YtSearchPatternAdmin(SearchPatternAdmin):
         return TemplateResponse(request, "admin/video_table.html",context)
 
 
-class FbSearchPatternAdmin(SearchPatternAdmin):
-    list_display = ('site', 'language', 'search_query', 'tag_list')
-    fieldsets = (
-        ("Search", {
-            'fields': ('site', 'duration', 'search_query')
-        }),
-        ("add to Videos", {
-            'fields': ('tags','language')
-        }),
-    )
-    autocomplete_fields = ( 'site', 'tags',)
-
-    def get_urls(self):
-        urls = super().get_urls()
-        opts = self.opts
-        my_urls = [
-                path('find/',
-                     self.admin_site.admin_view(self.find),
-                     name="%s_%s_find"%(opts.app_label, opts.model_name)
-                ),
-                path('preview/',
-                     VideoDetailsListView.as_view({'get': 'list'}),
-                     name="%s_%s_preview"%(opts.app_label, opts.model_name)
-                ),
-        ]
-        return my_urls + urls
-
-    def find(self, request):
-        params = request.GET
-        site_pk = params.get('site_pk')
-        slug = FbSite.objects.get(id=site_pk).slug
-        rest_request_GET = request.GET.copy()
-        rest_request_GET['site_slug'] = slug
-        del(rest_request_GET['site_pk'])
-        request.GET = rest_request_GET
-        return VideoDetailsListView.as_view({'get': 'list'})(request)
-        if request.method == "GET":
-            params = request.GET
-            site_pk = params['site_pk']
-            slug = FbSite.objects.get(id=site_pk).slug
-            search_query = params['search_query']
-            videos = facebook_finder.search(slug, search_query, duration=params['duration'])
-            videos = highlight_search(videos, search_query)
-            context = dict(
-                    videos=videos,
-                    opts = self.opts,
-            )
-        else:
-            #ERROR: request method not allowed
-            pass
-        #!TODO: show error
-        #!TODO: convert video in Django Video type. 
-        #       templates should not depend on the video type of the api 
-        return TemplateResponse(request, "admin/video_table.html",context)
-
-
-class FbSiteAdmin(admin.ModelAdmin):
-    list_display = ('slug', )
-    list_display_links = ('slug',)
-    search_fields = ('slug',)
-    # readonly_fields = ('slug',)
+# class FbSearchPatternAdmin(SearchPatternAdmin):
+#     list_display = ('site', 'language', 'search_query', 'tag_list')
+#     fieldsets = (
+#         ("Search", {
+#             'fields': ('site', 'duration', 'search_query')
+#         }),
+#         ("add to Videos", {
+#             'fields': ('tags','language')
+#         }),
+#     )
+#     autocomplete_fields = ( 'site', 'tags',)
+# 
+#     def get_urls(self):
+#         urls = super().get_urls()
+#         opts = self.opts
+#         my_urls = [
+#                 path('find/',
+#                      self.admin_site.admin_view(self.find),
+#                      name="%s_%s_find"%(opts.app_label, opts.model_name)
+#                 ),
+#                 path('preview/',
+#                      VideoDetailsListView.as_view({'get': 'list'}),
+#                      name="%s_%s_preview"%(opts.app_label, opts.model_name)
+#                 ),
+#         ]
+#         return my_urls + urls
+# 
+#     def find(self, request):
+#         params = request.GET
+#         site_pk = params.get('site_pk')
+#         slug = FbSite.objects.get(id=site_pk).slug
+#         rest_request_GET = request.GET.copy()
+#         rest_request_GET['site_slug'] = slug
+#         del(rest_request_GET['site_pk'])
+#         request.GET = rest_request_GET
+#         return VideoDetailsListView.as_view({'get': 'list'})(request)
+#         if request.method == "GET":
+#             params = request.GET
+#             site_pk = params['site_pk']
+#             slug = FbSite.objects.get(id=site_pk).slug
+#             search_query = params['search_query']
+#             videos = facebook_finder.search(slug, search_query, duration=params['duration'])
+#             videos = highlight_search(videos, search_query)
+#             context = dict(
+#                     videos=videos,
+#                     opts = self.opts,
+#             )
+#         else:
+#             #ERROR: request method not allowed
+#             pass
+#         #!TODO: show error
+#         #!TODO: convert video in Django Video type. 
+#         #       templates should not depend on the video type of the api 
+#         return TemplateResponse(request, "admin/video_table.html",context)
+# 
+# 
+# class FbSiteAdmin(admin.ModelAdmin):
+#     list_display = ('slug', )
+#     list_display_links = ('slug',)
+#     search_fields = ('slug',)
+#     # readonly_fields = ('slug',)
 
 class GroupContentInline(admin.StackedInline):
     model = GroupContent
@@ -380,10 +380,10 @@ admin.site.register(GroupContent, GroupContentAdmin)
 admin.site.register(TagKeyword, TagKeywordAdmin)
 admin.site.register(Video, VideoAdmin)
 admin.site.register(YtSearchPattern, YtSearchPatternAdmin)
-admin.site.register(FbSearchPattern, FbSearchPatternAdmin)
+# admin.site.register(FbSearchPattern, FbSearchPatternAdmin)
 admin.site.register(TagContent, TagContentAdmin)
 admin.site.register(Tag, TagAdmin)
 admin.site.register(YtChannel, YtChannelAdmin)
-admin.site.register(FbSite, FbSiteAdmin)
+# admin.site.register(FbSite, FbSiteAdmin)
 admin.site.register(Update, UpdateAdmin)
 admin.site.register(Session)

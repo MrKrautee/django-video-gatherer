@@ -1,16 +1,18 @@
 import logging
 from rest_framework import serializers
-from rest_framework import filters
-from django.conf import settings
+# from rest_framework import filters
+# from django.conf import settings
 from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import ngettext_lazy 
+from django.utils.translation import ngettext_lazy
 from gatherer.models import Tag, TagContent
 from gatherer.models import Video, YtChannel, FbSite
 from gatherer.models import Group, GroupContent
-from gatherer.tools import get_video_lang
+# from gatherer.tools import get_video_lang
 
 _logger = logging.getLogger(__name__)
+
+
 class TagContentSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -41,15 +43,15 @@ class TranslatedTagSerializer(serializers.ModelSerializer):
         try:
             return obj.name(self.context['request'].LANGUAGE_CODE)
         except KeyError:
-            _logger.error("glitch: no lang code")
-            return obj.name('en') #@HACK
+            # _logger.error("glitch: no lang code")
+            return obj.name('en')  # @HACK
 
     def get_slug(self, obj):
         try:
             return obj.slug(self.context['request'].LANGUAGE_CODE)
         except KeyError:
-            _logger.error("glitch: no lang code")
-            return obj.name('en') #@HACK
+            # _logger.error("glitch: no lang code")
+            return obj.name('en')  # @HACK
 
 
 class GroupContentSerializer(serializers.ModelSerializer):
@@ -63,7 +65,7 @@ class GroupContentSerializer(serializers.ModelSerializer):
 class GroupSerializer(serializers.ModelSerializer):
 
     content = GroupContentSerializer(source='groupcontent_set',
-                                   many=True, read_only=True)
+                                     many=True, read_only=True)
 
     class Meta:
         model = Group
@@ -83,8 +85,8 @@ class TranslatedGroupSerializer(serializers.ModelSerializer):
         try:
             return obj.name(self.context['request'].LANGUAGE_CODE)
         except KeyError:
-            _logger.error("glitch: no lang code")
-            return obj.name('en') #@HACK
+            # _logger.error("glitch: no lang code")
+            return obj.name('en')  # @HACK
 
     def get_tags(self, obj):
         try:
@@ -102,9 +104,10 @@ class TranslatedGroupSerializer(serializers.ModelSerializer):
         tags = Tag.objects.filter(**tag_filter)
         tags = tags.distinct()
         tags = sorted(tags,
-                      key = lambda tag: tag.name(lang_code))
+                      key=lambda tag: tag.name(lang_code))
         return TranslatedTagSerializer(tags, many=True,
                                        context=self.context).data
+
 
 class YtChannelSerializer(serializers.ModelSerializer):
 
@@ -113,12 +116,12 @@ class YtChannelSerializer(serializers.ModelSerializer):
         fields = ['title', 'description']
 
 
-class FbSiteSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = FbSite
-        fields = ['slug', 'url']
-
+# class FbSiteSerializer(serializers.ModelSerializer):
+# 
+#     class Meta:
+#         model = FbSite
+#         fields = ['slug', 'url']
+# 
 
 TIME_STRINGS = {
     'year': ngettext_lazy('%d year', '%d years'),
@@ -128,6 +131,8 @@ TIME_STRINGS = {
     'hour': ngettext_lazy('%d hour', '%d hours'),
     'minute': ngettext_lazy('%d minute', '%d minutes'),
 }
+
+
 class VideoSerializer(serializers.ModelSerializer):
 
     publisher = serializers.SerializerMethodField()
@@ -160,3 +165,54 @@ class VideoSerializer(serializers.ModelSerializer):
     def get_type(self, obj):
         type = obj.type.replace("video", "")
         return type.capitalize()
+
+
+class TagPreviewSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
+    slug = serializers.SerializerMethodField()
+    videos = serializers.SerializerMethodField()
+    more = serializers.SerializerMethodField()
+
+    videoManager = Video.objects.active()
+    # @HACK:
+
+    class Meta:
+        model = Tag
+        # video_set = serializers.ListField(
+        #                 child=serializers.ReadOnlyField(),
+        #                 max_length=6)
+        fields = ['name', 'slug', 'videos', 'more']
+
+    def get_name(self, obj):
+        try:
+            return obj.name(self.context['request'].LANGUAGE_CODE)
+        except KeyError:
+            # _logger.error("glitch: no lang code")
+            return obj.name('en')  # @HACK
+
+    def get_slug(self, obj):
+        try:
+            return obj.slug(self.context['request'].LANGUAGE_CODE)
+        except KeyError:
+            # _logger.error("glitch: no lang code")
+            return obj.name('en')  # @HACK
+
+
+    def get_videos(self, obj):
+        query = self.videoManager.filter(tags__id=obj.id)
+
+        serializers = VideoSerializer(query[:6], many=True)
+        return serializers.data
+
+    def get_more(self, obj):
+        return self.videoManager.filter(tags__id=obj.id).count() > 6
+
+# class FilterView(serializers.ModelSerializer):
+#     groups = serializers.SerializerMethodField()
+#     videos = serializers.SerializerMethodField()
+# 
+#     def get_groups(self, obj):
+#         return TranslatedGroupSerializer(Group.objects.all(), many=True,
+#                                        context=self.context).data
+#     def get_videos(self, obj):
+#         pass
