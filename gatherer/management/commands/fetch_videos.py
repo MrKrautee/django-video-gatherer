@@ -1,12 +1,12 @@
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 
 from gatherer.models import Update
 from gatherer.models import Video
 
+
 class Command(BaseCommand):
     help = 'Fetch videos from server using the VideoSearchPatthern'
-
 
     def handle(self, *args, **options):
         update_model = Update.objects.make_update()
@@ -16,6 +16,7 @@ class Command(BaseCommand):
         if len(videos_updated):
             for video in videos_updated:
                 self.stdout.write(f"added video: {video}")
-            self.stdout.write(self.style.SUCCESS(f"{len(videos_updated)} videos added."))
+            self.stdout.write(self.style.SUCCESS(
+                f"{len(videos_updated)} videos added."))
         else:
-            self.stdout.write(self.style.SUCCESS(f"no videos added."))
+            self.stdout.write(self.style.SUCCESS("no videos added."))
