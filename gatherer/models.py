@@ -1,7 +1,5 @@
 import logging
-from datetime import datetime
-from datetime import timedelta
-from urllib.parse import urljoin
+import unicodedata
 
 from django.db import models
 from django.utils import dateparse
@@ -12,7 +10,6 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from gatherer.tools import youtube_finder, EventType, VideoDuration
-# from gatherer.tools import facebook_finder
 
 logger = logging.getLogger("django")
 
@@ -31,7 +28,7 @@ class Group(models.Model):
     def name(self, lang_code):
         try:
             group_content = self.groupcontent_set.get(language=lang_code)
-        except:  # TODO: catch specific Exception
+        except Exception:  # TODO: catch specific Exception
             group_content = self.groupcontent_set.get(
                                         language=settings.LANGUAGE_CODE
                         )
@@ -62,25 +59,24 @@ class GroupContent(models.Model):
     class Meta:
         unique_together = ('group', 'language')
 
+
 class Tag(models.Model):
     group = models.ForeignKey(Group, on_delete=models.CASCADE, blank=True)
 
     def name(self, lang_code):
         try:
             tag_content = self.tagcontent_set.get(language=lang_code)
-        except:  # TODO: catch specific Exception
+        except Exception:  # TODO: catch specific Exception
             tag_content = self.tagcontent_set.get(
-                                        language=settings.LANGUAGE_CODE
-                        )
+                                        language=settings.LANGUAGE_CODE)
         return tag_content.name
 
     def slug(self, lang_code):
         try:
             tag_content = self.tagcontent_set.get(language=lang_code)
-        except:  # TODO: catch specific Exception
+        except Exception:  # TODO: catch specific Exception
             tag_content = self.tagcontent_set.get(
-                                        language=settings.LANGUAGE_CODE
-                        )
+                                        language=settings.LANGUAGE_CODE)
         return tag_content.slug
 
     def description(self, lang_code):
@@ -88,8 +84,7 @@ class Tag(models.Model):
 
     def __str__(self):
         tag_content = self.tagcontent_set.filter(
-                            language=settings.LANGUAGE_CODE
-                      )[0]
+                            language=settings.LANGUAGE_CODE)[0]
         return str(tag_content)
 
 
@@ -109,6 +104,7 @@ class TagContent(models.Model):
 
     class Meta:
         unique_together = ('tag', 'language')
+
 
 class TagKeyword(models.Model):
     keyword = models.CharField(max_length=255, blank=False)
@@ -131,7 +127,6 @@ class YtChannel(models.Model):
                        self._meta.model_name), args=[self.id])
 
 
-import unicodedata
 class VideoManager(models.Manager):
 
     def auto_tag(self, videos=None, tag=None):
@@ -147,20 +142,22 @@ class VideoManager(models.Manager):
             logger.info(f"checking {video}...")
             for tag in tags:
                 keywords = [tc.name.lower() for tc in tag.tagcontent_set.all()]
-                more_kws = [k.keyword.lower() for k in tag.tagkeyword_set.all()]
+                more_kws = [k.keyword.lower()
+                            for k in tag.tagkeyword_set.all()]
                 keywords.extend(more_kws)
                 for k in keywords:
                     k_norm = unicodedata.normalize('NFC', k.lower())
-                    video_title_norm = unicodedata.normalize('NFC', video.title.lower())
+                    video_title_norm = unicodedata.normalize(
+                            'NFC', video.title.lower())
                     if k_norm in video_title_norm:
                         video.tags.add(tag)
                         logger.info(f"\t>>> <{tag}> added")
-                        print(f"added tag {tag} to {video}")
                         break
-        logger.info(f"... auto tagging completed")
+        logger.info("... auto tagging completed")
 
     def active(self):
         return self.filter(is_active=True)
+
 
 class Video(models.Model):
 
@@ -193,12 +190,12 @@ class Video(models.Model):
         try:
             if self.facebookvideo:
                 return facebook
-        except:
+        except Exception:
             pass
         try:
             if self.youtubevideo:
                 return youtube
-        except:
+        except Exception:
             pass
         return ""
 
@@ -221,9 +218,11 @@ class Video(models.Model):
     class Meta:
         ordering = ['-published_at', ]
 
+
 def test_tagging():
     vlist = Video.objects.filter(id=1034)
     Video.objects.auto_tag(videos=vlist)
+
 
 @receiver(post_save, sender=TagContent, dispatch_uid="call_me_once_only_12345")
 def tagContent_post_save(sender, instance, **kwargs):
@@ -319,20 +318,24 @@ class YtSearchPattern(SearchPattern):
         #           * published_before=self.published_before,
         #           * published_after=self.published_after
         videos = youtube_finder.search_videos(content_details=True,
-                **search_params)
+                                              **search_params)
         with transaction.atomic():
             video_models_status = [
-                    YoutubeVideo.objects.update_or_create(video_id=v.video_id,
-                        defaults = dict(title=v.title,
-                        description=v.description,
-                        image=v.image_url,
-                        published_at=dateparse.parse_datetime(v.published_at),
-                        duration=dateparse.parse_duration(v.duration),
+                    YoutubeVideo.objects.update_or_create(
                         video_id=v.video_id,
-                        channel=self.channel,
-                        live_broadcast=v.live_broadcast,
-                        search_pattern=self,
-                        language=self.language))
+                        defaults=dict(
+                            title=v.title,
+                            description=v.description,
+                            image=v.image_url,
+                            published_at=dateparse.parse_datetime(
+                                v.published_at),
+                            duration=dateparse.parse_duration(v.duration),
+                            video_id=v.video_id,
+                            channel=self.channel,
+                            live_broadcast=v.live_broadcast,
+                            search_pattern=self,
+                            language=self.language)
+                        )
                     for v in videos]
             # add tags
             if self.tags.all():
@@ -343,93 +346,6 @@ class YtSearchPattern(SearchPattern):
     def __str__(self):
         return f"{self.channel}, q={self.search_query}, {self.duration}"
 
-
-class FbSite(models.Model):
-    FB_BASE_URL = "https://www.facebook.com"
-    slug = models.CharField(max_length=255, blank=False, unique=True)
-
-    # @TODO: - name
-    #        - description / mission
-
-    @property
-    def url(self):
-        return urljoin(self.FB_BASE_URL, self.slug)
-
-    def __str__(self):
-        return f"{self.slug}"
-
-    def get_admin_url(self):
-        return reverse('admin:%s_%s_change' % (self._meta.app_label,
-                       self._meta.model_name), args=[self.id])
-
-
-# class FacebookVideo(Video):
-#     URL_BASE = "https://facebook.com/"
-#     URL_TEMPLATE = f"{URL_BASE}%s/videos/%s"
-# 
-#     video_id = models.CharField(max_length=255, unique=True)
-#     site = models.ForeignKey(FbSite, on_delete=models.CASCADE)
-#     search_pattern = models.ForeignKey("FbSearchPattern",
-#                                        on_delete=models.CASCADE)
-# 
-#     @property
-#     def publisher(self):
-#         return self.site
-# 
-#     @property
-#     def link(self):
-#         return self.URL_TEMPLATE % (self.site.slug, self.video_id)
-# 
-# 
-# class FbSearchPattern(SearchPattern):
-# 
-#     site = models.ForeignKey(FbSite, on_delete=models.CASCADE)
-#     duration = models.CharField(max_length=12, choices=DURATION_CHOICES,
-#                                 default='long')
-# 
-#     video_model = FacebookVideo
-# 
-#     def update_videos(self):
-#         videos = self.video_model.objects.filter(search_pattern=self)
-#         recent_video = videos.order_by("-published_at")[0]
-#         last_published = recent_video.published_at
-#         pass
-# 
-#     def save_videos(self):
-#         logger.debug("save facebook videos")
-#         videos = facebook_finder.search(self.site.slug, self.search_query)
-#         with transaction.atomic():
-#             video_models_status = [
-#                     FacebookVideo.objects.update_or_create(
-#                         video_id=v['video_id'],
-#                         defaults={
-#                             'description': v['description'],
-#                             'title': v['title'],
-#                             'image': v['image_url'],
-#                             'published_at':
-#                                 datetime.fromtimestamp(v['published_at']),
-#                             'duration': timedelta(minutes=v['duration']),
-#                             'site': self.site,
-#                             'video_id': v['video_id'],
-#                             'search_pattern': self,
-#                             'language': self.language,
-#                         }
-#                     ) for v in videos]
-#             if self.tags.all():
-#                 for obj, _ in video_models_status:
-#                     obj.tags.add(*self.tags.all())
-#         return video_models_status
-# 
-#     class Meta:
-#         unique_together = [['site', 'search_query']]
-# 
-#     def __str__(self):
-#         return f"{self.site}, q={self.search_query}"
-# 
-#     def get_admin_url(self):
-#         return reverse('admin:%s_%s_change' % (self._meta.app_label,
-#                        self._meta.model_name), args=[self.id])
-# 
 
 class UpdateManager(models.Manager):
 

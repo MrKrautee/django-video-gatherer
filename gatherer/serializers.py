@@ -1,14 +1,13 @@
 import logging
-from rest_framework import serializers
-# from rest_framework import filters
-# from django.conf import settings
+
 from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy
+
+from rest_framework import serializers
 from gatherer.models import Tag, TagContent
-from gatherer.models import Video, YtChannel, FbSite
+from gatherer.models import Video, YtChannel
 from gatherer.models import Group, GroupContent
-# from gatherer.tools import get_video_lang
 
 _logger = logging.getLogger(__name__)
 
@@ -116,13 +115,6 @@ class YtChannelSerializer(serializers.ModelSerializer):
         fields = ['title', 'description']
 
 
-# class FbSiteSerializer(serializers.ModelSerializer):
-# 
-#     class Meta:
-#         model = FbSite
-#         fields = ['slug', 'url']
-# 
-
 TIME_STRINGS = {
     'year': ngettext_lazy('%d year', '%d years'),
     'month': ngettext_lazy('%d month', '%d months'),
@@ -178,9 +170,6 @@ class TagPreviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Tag
-        # video_set = serializers.ListField(
-        #                 child=serializers.ReadOnlyField(),
-        #                 max_length=6)
         fields = ['name', 'slug', 'videos', 'more']
 
     def get_name(self, obj):
@@ -197,7 +186,6 @@ class TagPreviewSerializer(serializers.ModelSerializer):
             # _logger.error("glitch: no lang code")
             return obj.name('en')  # @HACK
 
-
     def get_videos(self, obj):
         query = self.videoManager.filter(tags__id=obj.id)
 
@@ -206,13 +194,3 @@ class TagPreviewSerializer(serializers.ModelSerializer):
 
     def get_more(self, obj):
         return self.videoManager.filter(tags__id=obj.id).count() > 6
-
-# class FilterView(serializers.ModelSerializer):
-#     groups = serializers.SerializerMethodField()
-#     videos = serializers.SerializerMethodField()
-# 
-#     def get_groups(self, obj):
-#         return TranslatedGroupSerializer(Group.objects.all(), many=True,
-#                                        context=self.context).data
-#     def get_videos(self, obj):
-#         pass
