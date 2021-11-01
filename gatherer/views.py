@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from django.db.models import Q
 
 from rest_framework.mixins import ListModelMixin
@@ -57,7 +56,6 @@ class VideoFilterView(ListModelMixin, GenericViewSet):
 class VideoListView(VideoFilterView):
     queryset = Video.objects
     serializer_class = VideoSerializer
-    # renderer_classes = [TemplateHTMLRenderer, JSONRenderer]
 
     def get_queryset(self):
         if self.request.GET.get('order_by'):
@@ -149,24 +147,6 @@ class TagVideoPreview(VideoFilterView):
             'lang_code': self.request.LANGUAGE_CODE,
             'request': self.request
         }
-
-
-def video_filter_entry(request):
-    order_options = {
-            "-published_at": "Datum ab",
-            "published_at": "Datum auf",
-            "-duration": "Dauer ab",
-            "duration": "Dauer auf",
-    }
-    order_by = request.GET.get('order_by', '-published_at')
-    page_nr = request.GET.get('page', 1)
-    context = {
-            'order_by': order_by,
-            'page_nr': page_nr,
-            'order_options': order_options,
-            'video_lang': request.session.get('video_lang'),
-    }
-    return render(request, "gatherer/videos.html", context)
 
 
 class TagListView(ListModelMixin, GenericViewSet):
