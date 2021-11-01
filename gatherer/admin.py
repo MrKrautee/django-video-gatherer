@@ -28,7 +28,7 @@ from gatherer.models import YtChannel
 from gatherer.models import FbSite
 from gatherer.models import Update
 from gatherer.tools import youtube_finder, VideoDuration, EventType
-from gatherer.tools import facebook_finder
+# from gatherer.tools import facebook_finder
 
 logger = logging.getLogger("django")
 
